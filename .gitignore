@@ -1,0 +1,9 @@
+**/node_modules/**
+**/.vite-node
+samples/**
+*.mjs
+output/*
+dist/**
+docs/**
+framefusion-*.tgz
+__image_snapshots__/__diff_output__/**
