@@ -10,7 +10,7 @@ import {
     beforeEach,
     afterAll
 } from 'vitest';
-import { BeamcoderExtractor } from './framefusion';
+import { BeamcoderExtractor } from '../framefusion';
 import sinon from 'sinon';
 import { toMatchImageSnapshot } from 'jest-image-snapshot';
 import { fileExistsSync } from 'tsconfig-paths/lib/filesystem';

@@ -2,7 +2,7 @@ import type {
     ExtractorArgs,
     Frame,
     Extractor
-} from './framefusion';
+} from '../framefusion';
 
 export class BaseExtractor implements Extractor {
     static async create(args: ExtractorArgs): Promise<Extractor> {

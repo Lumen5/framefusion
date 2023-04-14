@@ -1,4 +1,4 @@
-import { BeamcoderExtractor } from './backends/beamcoder.js';
+import { BeamcoderExtractor } from './src/backends/beamcoder.js';
 
 export type Frame = {
     pts: number,

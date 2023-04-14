@@ -9,7 +9,7 @@ import {
     InterpolateMode,
     Extractor,
     ExtractorArgs,
-} from '../framefusion.js';
+} from '../../framefusion.js';
 import {
     BaseExtractor,
 } from '../BaseExtractor.js';
