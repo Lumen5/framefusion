@@ -339,7 +339,6 @@ describe('framefusion', async () => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFile: './samples/countTo60.mp4',
-                outputFile: './output/frame-%04d.png',
                 threadCount: 8,
             }) as BeamcoderExtractor;
 
@@ -356,11 +355,30 @@ describe('framefusion', async () => {
             extractor.dispose();
         }, 2000);
 
+        it('Should seek and dump all frames in the video [other video]', async () => {
+            // Arrange
+            const extractor = await BeamcoderExtractor.create({
+                inputFile: TEST_VIDEO_LOW_FRAMERATE,
+                threadCount: 8,
+            }) as BeamcoderExtractor;
+
+            // Sample at the middle of each frame
+            const FRAME_SYNC_DELTA = (1 / 30.0) / 2.0;
+
+            // Act & assert
+            for (let i = 0; i < extractor.duration * 30.0; i++) {
+                const frame = await extractor.getFrameAtTime(i / 30.0 + FRAME_SYNC_DELTA);
+                expect(Math.floor(extractor.ptsToTime(frame.pts) * 30)).to.be.closeTo(i, 15);
+            }
+
+            // Cleanup
+            extractor.dispose();
+        }, 10000);
+
         it('Should seek and dump frames at different points in the video', async () => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFile: './samples/countTo60.mp4',
-                outputFile: './output/frame-%04d.png',
                 threadCount: 8,
             });
 
@@ -419,7 +437,7 @@ describe('framefusion', async () => {
         }, 30000);
     });
 
-    it('Should minterpolate frames (fast)', async () => {
+    it('Should interpolate frames (fast)', async () => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
             inputFile: TEST_VIDEO_LOW_FRAMERATE,
@@ -431,12 +449,19 @@ describe('framefusion', async () => {
 
         // Act
         const p1 = performance.now();
-        await extractor.readFrames();
+        let count = 0;
+        await extractor.readFrames({
+            async onFrameAvailable() {
+                count++;
+                return true;
+            }
+        });
         const p2 = performance.now();
         console.log('Time to interpolate all frames (fast) and dump all frames (ms): ', p2 - p1);
 
         await new Promise(resolve => setTimeout(resolve, 1000));
 
+        expect(count).to.be.greaterThan(240);
         expect(fileExistsSync('./output/frame-0001.png')).to.be.true;
         expect(fileExistsSync('./output/frame-0241.png')).to.be.true;
 
@@ -444,7 +469,7 @@ describe('framefusion', async () => {
         extractor.dispose();
     }, 200000);
 
-    it('Should interpolate frames (high-quality)', async () => {
+    it('Should minterpolate frames (high-quality)', async () => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
             inputFile: TEST_VIDEO_LOW_FRAMERATE,
@@ -456,12 +481,19 @@ describe('framefusion', async () => {
 
         // Act
         const p1 = performance.now();
-        await extractor.readFrames();
+        let count = 0;
+        await extractor.readFrames({
+            async onFrameAvailable() {
+                count++;
+                return true;
+            }
+        });
         const p2 = performance.now();
         console.log('Time to interpolate (high-quality) and dump all frames (ms): ', p2 - p1);
 
         await new Promise(resolve => setTimeout(resolve, 1000));
 
+        expect(count).to.be.greaterThan(240);
         expect(fileExistsSync('./output/frame-0001.png')).to.be.true;
         expect(fileExistsSync('./output/frame-0241.png')).to.be.true;
 

@@ -93,7 +93,7 @@ const getFilter = async ({
 } : {
     stream: beamcoder.Stream;
     outputPixelFormat: string;
-    interpolateFps: number,
+    interpolateFps?: number,
     interpolateMode?: InterpolateMode
 }): Promise<beamcoder.Filterer> => {
     if (!stream.codecpar.format) {
@@ -160,7 +160,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     lastFrame:       beamcoder.Frame = null;
     filteredFrames:  beamcoder.Frame[] = [];
     #streamStopped = false;
-
+    #flushed: boolean = false;
 
     /**
      * Encoder/Decoder constuction is async, so it can't be put in a regular constructor.
@@ -335,6 +335,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             // No need to seek, we haven't started reading yet.
             return;
         }
+        this.lastFrame = null;
         this.#targetPts = targetPts;
         console.log(`Seeking to PTS=${targetPts}`);
         await this.#skipToStream0PacketIfNotAlreadyStream0();
@@ -363,7 +364,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      * @see getFrameAtPts()
      */
     async getFrameAtTime(targetTime: number): Promise<beamcoder.Frame> {
-        LOG_SINGLE_FRAME_DUMP_FLOW && console.log(`Requesting to dump a frame at ${targetTime}`);
+        LOG_SINGLE_FRAME_DUMP_FLOW && console.log(`Requesting to dump a frame at Time(s)=${targetTime}`);
         const targetPts = Math.floor(this.timeToPts(targetTime));
         return await this.getFrameAtPts(targetPts);
     }
@@ -378,23 +379,29 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      * read packets as they come, when possible,
      */
     async getFrameAtPts(targetPts: number): Promise<beamcoder.Frame> {
-        LOG_SINGLE_FRAME_DUMP_FLOW && console.log(`Requesting to dump a frame at ${targetPts}`);
+        LOG_SINGLE_FRAME_DUMP_FLOW && console.log(`Requesting to dump a frame at PTS=${targetPts}`);
 
         if (this.packet) {
             const newTime = this.ptsToTime(targetPts);
-            const currentTime = this.ptsToTime(this.packet.pts);
+            const currentTime = this.ptsToTime(this.lastFrame.pts);
 
-            // Heuristic: if moving more than half a second away, seek instead
+            // Heuristic: if moving more than `SEEK_DELAY` away, seek instead
             // of processing packets until target. Note that this logic is not
             // good if playback rate is faster.
-            if (Math.abs(newTime - currentTime) > 0.5) {
-                LOG_SINGLE_FRAME_DUMP_FLOW && console.log('time difference is big. Seeking.');
+            const SEEK_DELAY = 2.0;
+            if (Math.abs(newTime - currentTime) > SEEK_DELAY) {
+                LOG_SINGLE_FRAME_DUMP_FLOW && console.log(`Time difference is bigger than SEEK_DELAY=${SEEK_DELAY}. Seeking.`);
                 await this.seekToPTS(targetPts);
             }
         }
 
         if (this.packet === null && this.filteredFrames.length === 0 && targetPts >= this.lastFrame.pts) {
             LOG_SINGLE_FRAME_DUMP_FLOW && console.log(`Last frame has been reached, resolving with last frame, pts=${this.lastFrame.pts}`);
+            return this.lastFrame;
+        }
+
+        if (this.filteredFrames.length > 0 && targetPts < this.filteredFrames[0].pts) {
+            LOG_SINGLE_FRAME_DUMP_FLOW && console.log(`Next frame is to be presented later (at PTS=${this.filteredFrames[0].pts}), resolving with last frame again, pts=${this.lastFrame.pts} [video fps is probably low]`);
             return this.lastFrame;
         }
 
@@ -417,20 +424,37 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
                 // that's when we know the last frame was the one
                 // that had to be shown at targetPts
                 if (frame.pts === targetPts) {
-                    LOG_SINGLE_FRAME_DUMP_FLOW && console.log('frame.pts === targetPts | ', `${frame.pts} === ${targetPts}`, 'resolving with this frame!');
-                    resolve(frame);
+                    LOG_SINGLE_FRAME_DUMP_FLOW && console.log('frame.pts === targetPts | ', `${frame.pts} === ${targetPts} - resolving with this frame!`);
                     this.lastFrame = frame;
+                    resolve(frame);
                     return false;
                 }
 
                 if (frame.pts > targetPts) {
-                    LOG_SINGLE_FRAME_DUMP_FLOW && console.log('frame.pts >= targetPts | ', `${frame.pts} >= ${targetPts}`, 'resolving with previous frame!');
-                    resolve(this.lastFrame);
-                    this.lastFrame = frame;
+                    if (this.lastFrame) {
+                        LOG_SINGLE_FRAME_DUMP_FLOW && console.log('frame.pts > targetPts | ', `${frame.pts} > ${targetPts} - resolving with previous frame (PTS=${this.lastFrame.pts})!`);
+                        resolve(this.lastFrame);
+                        // Add this frame back to the buffer - we don't need it yet.
+                        this.filteredFrames = [frame, ...this.filteredFrames];
+                        return false;
+                    }
+                    else {
+                        LOG_SINGLE_FRAME_DUMP_FLOW && console.log('frame.pts > targetPts | ', `${frame.pts} > ${targetPts} - but no last frame available - resolving with frame!`);
+                        // Add this frame back to the buffer - we don't need it yet.
+                        this.filteredFrames = [frame, ...this.filteredFrames];
+                        this.lastFrame = frame;
+                        resolve(frame);
+                        return false;
+                    }
+                }
+
+                if (this.packet === null && this.filteredFrames.length === 0 && targetPts >= this.lastFrame.pts) {
+                    LOG_SINGLE_FRAME_DUMP_FLOW && console.log(`Last frame has been reached, resolving with last frame, pts=${this.lastFrame.pts}`);
+                    resolve(frame)
                     return false;
                 }
 
-                LOG_SINGLE_FRAME_DUMP_FLOW && console.log('frame.pts < targetPts | ', `${frame.pts} < ${targetPts}`, 'Continuing');
+                LOG_SINGLE_FRAME_DUMP_FLOW && console.log('frame.pts < targetPts | ', `${frame.pts} < ${targetPts} - continuing`);
 
                 this.lastFrame = frame;
 
@@ -625,6 +649,11 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     }) {
         LOG_PACKET_FLOW && console.log(`\n                  Flushing decoder`);
 
+        if (this.#flushed) {
+            throw new Error('Already flushed');
+        }
+
+        this.#flushed = true;
         const decoderResult = await this.decoder.flush();
         let { needsMore } = await this.#filterAndProcessFrames({
             decoderResult,
