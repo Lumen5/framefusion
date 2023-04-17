@@ -34,6 +34,8 @@ async function run() {
 run();
 ```
 
+For a complete working project (with package.json, vite config, typescript config), see here: https://github.com/Lumen5/framefusion/tree/main/examples/mini-framefusion-example
+
 # Running test
 
 ```bash
