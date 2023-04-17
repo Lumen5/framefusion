@@ -114,18 +114,11 @@ const getFilter = async ({
         }
     }
 
-    const pixelRatio = stream.codecpar.sample_aspect_ratio;
-    //if (pixelRatio[0] !== 1 ||
-    //    pixelRatio[1] !== 1) {
-    //    console.warn(`Received non-square pixel aspect ratio of ${pixelRatio}. Using additional filtering to output square pixels.`);
-    //    filterSpec = [...filterSpec, 'scale=iw:ih'];
-    //}
-
     filterSpec = [...filterSpec]
 
     const filterSpecStr = filterSpec.join(', ') + '[out0:v]';
 
-    console.log(`filterSpec: ${filterSpecStr}, output pixel format: ${outputPixelFormat}`);
+    console.log(`filterSpec: ${filterSpecStr}`);
 
     return beamcoder.filterer({
         filterType: 'video',
@@ -134,9 +127,9 @@ const getFilter = async ({
                 name: 'in0:v',
                 width: stream.codecpar.width,
                 height: stream.codecpar.height,
+                pixelFormat: stream.codecpar.format,
                 timeBase: stream.time_base,
                 pixelAspect: stream.sample_aspect_ratio,
-                pixelFormat: stream.codecpar.format,
             },
         ],
         outputParams: [
