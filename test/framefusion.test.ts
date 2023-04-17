@@ -27,9 +27,9 @@ const TEST_SERVER_PORT = 4242;
 
 expect.extend({ toMatchImageSnapshot })
 
-const TEST_VIDEO = './samples/bbb10m.mp4';
-const TEST_VIDEO_SMALLER = './samples/bbb-smaller.mp4';
-const TEST_VIDEO_LOW_FRAMERATE = './samples/bbb-low-fps.mp4';
+const TEST_VIDEO = './test/samples/bbb10m.mp4';
+const TEST_VIDEO_SMALLER = './test/samples/bbb-smaller.mp4';
+const TEST_VIDEO_LOW_FRAMERATE = './test/samples/bbb-low-fps.mp4';
 
 // TODOS
 // There are a few sleeps (timeouts) to probably remove
@@ -274,7 +274,7 @@ describe('framefusion', async () => {
         it('Should seek and dump frames precisely', async () => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
-                inputFile: './samples/countTo60.mp4',
+                inputFile: './test/samples/countTo60.mp4',
                 outputFile: './output/frame-%04d.png',
                 threadCount: 8,
             }) as BeamcoderExtractor;
@@ -303,7 +303,7 @@ describe('framefusion', async () => {
         it('Should dump frames and pause in-between', async () => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
-                inputFile: './samples/countTo60.mp4',
+                inputFile: './test/samples/countTo60.mp4',
                 outputFile: './output/frame-%04d.png',
                 threadCount: 8,
             }) as BeamcoderExtractor;
@@ -338,7 +338,7 @@ describe('framefusion', async () => {
         it('Should seek and dump all frames in the video', async () => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
-                inputFile: './samples/countTo60.mp4',
+                inputFile: './test/samples/countTo60.mp4',
                 threadCount: 8,
             }) as BeamcoderExtractor;
 
@@ -378,7 +378,7 @@ describe('framefusion', async () => {
         it('Should seek and dump frames at different points in the video', async () => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
-                inputFile: './samples/countTo60.mp4',
+                inputFile: './test/samples/countTo60.mp4',
                 threadCount: 8,
             });
 
@@ -505,7 +505,7 @@ describe('framefusion', async () => {
     it('Should open a file from the network and dump all frames  [smaller video version]', async () => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
-            url: `http://127.0.0.1:${TEST_SERVER_PORT}/samples/bbb-smaller-faststart.mp4`,
+            url: `http://127.0.0.1:${TEST_SERVER_PORT}/test/samples/bbb-smaller-faststart.mp4`,
             outputFile: './output/frame-%04d.png',
         }) as BeamcoderExtractor;
 
@@ -527,7 +527,7 @@ describe('framefusion', async () => {
     it.skip('Should open a file from the network and dump all frames', async () => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
-            url: `http://127.0.0.1:${TEST_SERVER_PORT}/samples/bbb10m.mp4`,
+            url: `http://127.0.0.1:${TEST_SERVER_PORT}/test/samples/bbb10m.mp4`,
             outputFile: './output/frame-%04d.png',
         }) as BeamcoderExtractor;
 
