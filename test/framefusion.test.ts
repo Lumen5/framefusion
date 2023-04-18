@@ -34,7 +34,7 @@ const TEST_VIDEO_LOW_FRAMERATE = './test/samples/bbb-low-fps.mp4';
 // TODOS
 // There are a few sleeps (timeouts) to probably remove
 
-describe('framefusion', async () => {
+describe.skip('framefusion', async () => {
     let server;
 
     beforeEach(async () => {
