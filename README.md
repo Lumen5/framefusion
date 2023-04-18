@@ -4,6 +4,25 @@ Dump mp4 frames at specific times in node.
 
 Framefusion is an experimental mp4 frame extraction library based on [beamcoder](https://github.com/Streampunk/beamcoder).
 
+# Pre-installation setup
+
+## Mac (M1)
+
+```
+brew uninstall ffmpeg
+brew install ffmpeg@5
+export CXXFLAGS="-I/opt/homebrew/Cellar/ffmpeg/5.1.2_6/include/"
+ln -s /opt/homebrew/Cellar/ffmpeg/5.1.2_6/ /opt/homebrew/Cellar/ffmpeg/5.0
+```
+
+## Mac (Intel)
+
+TODO
+
+## Linux
+
+TODO
+
 # Installing in a project
 
 ```bash
