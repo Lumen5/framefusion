@@ -3,14 +3,24 @@ import {
     it
 } from 'vitest';
 import { fileExistsSync } from 'tsconfig-paths/lib/filesystem';
-import {DownloadURL} from "../src/DownloadURL";
+import {DownloadVideoURL} from "../src/DownloadVideoURL";
 
 describe('downloadUrl', () => {
-    it.only('can download url', async () => {
+    it('can download url', async () => {
         const url = 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4';
-        const downloadUrl = new DownloadURL(url);
+        const downloadUrl = new DownloadVideoURL(url);
         await downloadUrl.download();
 
         expect(fileExistsSync(downloadUrl.filepath)).to.be.true;
+    });
+
+    it('deletes file when cleared', async () => {
+        const url = 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4';
+        let downloadUrl = new DownloadVideoURL(url);
+        await downloadUrl.download();
+        const filepath = downloadUrl.filepath;
+
+        downloadUrl.clear();
+        expect(fileExistsSync(filepath)).to.be.false;
     });
 });

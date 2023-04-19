@@ -1,10 +1,10 @@
 import { BeamcoderExtractor } from 'framefusion';
 
-const inputFile = './video.mp4';
+const inputFileOrUrl = './video.mp4';
 
 async function run() {
     const extractor = await BeamcoderExtractor.create({
-        inputFile,
+        inputFileOrUrl,
         //outputFile: 'image-%04d.png', // Uncomment to ouput files to disk
         outputPixelFormat: 'rgba',
     });

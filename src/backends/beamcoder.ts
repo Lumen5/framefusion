@@ -13,7 +13,7 @@ import {
 import {
     BaseExtractor,
 } from '../BaseExtractor.js';
-import {DownloadURL} from "../DownloadURL";
+import {DownloadVideoURL} from "../DownloadVideoURL";
 
 const LOG_PACKET_FLOW = false;
 const LOG_SINGLE_FRAME_DUMP_FLOW = false;
@@ -175,7 +175,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     }
 
     async init({
-        inputFile,
+        inputFileOrUrl,
         outputFile,
         threadCount = 8,
         endTime,
@@ -183,7 +183,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         interpolateMode,
         outputPixelFormat,
     }: ExtractorArgs): Promise<void> {
-        if (!inputFile) {
+        if (!inputFileOrUrl) {
             throw new Error('Can only use file OR url');
         }
         let readStream: Stream;
@@ -191,7 +191,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             outputPixelFormat = 'rgb24';
         }
 
-        console.log('init', { inputFile, outputFile, threadCount, endTime, interpolateFps, interpolateMode, outputPixelFormat });
+        console.log('init', { inputFileOrUrl, outputFile, threadCount, endTime, interpolateFps, interpolateMode, outputPixelFormat });
 
         //
         //      - Demuxing -
@@ -202,15 +202,16 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         let demuxerStream;
         let demuxer;
 
-        if (inputFile.startsWith('http')) {
+        if (inputFileOrUrl.startsWith('http')) {
             console.log('downloading url');
-            const downloadUrl = new DownloadURL(inputFile);
+            const downloadUrl = new DownloadVideoURL(inputFileOrUrl);
             await downloadUrl.download();
-            inputFile = downloadUrl.filepath;
+            inputFileOrUrl = downloadUrl.filepath;
+            console.log('finished downloading');
         }
 
         console.log('file mode');
-        demuxer = await beamcoder.demuxer('file:' + inputFile);
+        demuxer = await beamcoder.demuxer('file:' + inputFileOrUrl);
 
 
         console.log({ time_base: demuxer.streams[0].time_base });
