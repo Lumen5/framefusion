@@ -4,60 +4,33 @@ WORKDIR /ffmpeg-temp
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update\
-    && apt-get -y install\
-        wget\
-        make\
-        autoconf \
-        automake \
-        build-essential \
-        cmake \
-        git-core \
-        libass-dev \
-        libfreetype6-dev \
-        libgnutls28-dev \
-        libmp3lame-dev \
-        libsdl2-dev \
-        libtool \
-        libva-dev \
-        libvdpau-dev \
-        libvorbis-dev \
-        libxcb1-dev \
-        libxcb-shm0-dev \
-        libxcb-xfixes0-dev \
-        meson \
-        ninja-build \
-        pkg-config \
-        texinfo \
-        wget \
-        yasm \
-        zlib1g-dev\
-    && wget https://ffmpeg.org/releases/ffmpeg-5.1.3.tar.xz\
-    && tar -xf ffmpeg-*.tar.xz\
-    && rm ffmpeg-*.tar.xz\
-    && mv ffmpeg-* /ffmpeg-current
+RUN apt-get update && apt-get -y install wget xz-utils python3 build-essential
 
-WORKDIR /ffmpeg-current
+#
+# Install ffmpeg libraries
+#
+WORKDIR /ffmpeg-temp
+RUN wget https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2023-04-19-14-14/ffmpeg-n5.1.3-6-g1e413487bf-linux64-gpl-shared-5.1.tar.xz && mv $(ls -1) ffmpeg.tar.xz
 
-RUN ./configure --enable-pic --enable-shared --enable-gpl\
-    && make -j$(nproc)\
-    && make install\
-    && ldconfig /usr/local/lib
+RUN tar -xf ffmpeg.tar.xz && rm ffmpeg.tar.xz && mv $(ls -1) ffmpeg
+RUN mv ffmpeg/include/* /usr/local/include/
+RUN mv ffmpeg/lib/* /usr/local/lib/
+RUN ldconfig /usr/local/lib/
+ENV CXX_FLAGS="-I/usr/local/include/"
 
-
+#
+# Install node
+#
 WORKDIR /node-temp
 
 RUN wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
 
-RUN [ -s "$HOME/.nvm/nvm.sh" ] && \. "$HOME/.nvm/nvm.sh" \
+ADD . /framefusion
+WORKDIR /framefusion
+
+RUN . "$HOME/.nvm/nvm.sh"\
     && nvm install 14.18\
     && nvm use 14.18
 
-WORKDIR /framefusion
 
-ADD . /framefusion
-
-
-ENTRYPOINT [ -s "$HOME/.nvm/nvm.sh" ] && \. "$HOME/.nvm/nvm.sh"\
-    && npm ci\
-    && npm run test run
+ENTRYPOINT . "$HOME/.nvm/nvm.sh" && npm ci && npm run test run
