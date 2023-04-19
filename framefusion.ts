@@ -10,8 +10,7 @@ export type Frame = {
 export type InterpolateMode = 'fast' | 'high-quality';
 
 export type ExtractorArgs = {
-    url?:              string;
-    inputFile?:        string;
+    inputFileOrUrl?:        string;
     outputFile?:       string,
     threadCount?:      number,
     endTime?:          number;
@@ -59,7 +58,7 @@ export interface Extractor {
 //     const pts = 69632;
 //     // Arrange
 //     const extractor = await BeamcoderExtractor.create({
-//         inputFile: TEST_VIDEO,
+//         inputFileOrUrl: TEST_VIDEO,
 //         outputFile: `./output/frame-${pts}-%04d.png`,
 //     });
 //

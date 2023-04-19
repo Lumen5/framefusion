@@ -66,7 +66,7 @@ describe('framefusion', async () => {
 
         // Arrange & Act
         const extractor = await BeamcoderExtractor.create({
-            inputFile: TEST_VIDEO,
+            inputFileOrUrl: TEST_VIDEO,
             outputFile: './output/frame-%04d.png'
         });
 
@@ -86,7 +86,7 @@ describe('framefusion', async () => {
 
         // Arrange & Act
         const extractor = await BeamcoderExtractor.create({
-            inputFile: TEST_VIDEO,
+            inputFileOrUrl: TEST_VIDEO,
             outputFile: './output/frame-%04d.png'
         });
 
@@ -104,7 +104,7 @@ describe('framefusion', async () => {
     it('Should get duration', async () => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
-            inputFile: TEST_VIDEO,
+            inputFileOrUrl: TEST_VIDEO,
             outputFile: './output/frame-%04d.png'
         });
 
@@ -121,7 +121,7 @@ describe('framefusion', async () => {
     it('Should get width', async () => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
-            inputFile: TEST_VIDEO,
+            inputFileOrUrl: TEST_VIDEO,
             outputFile: './output/frame-%04d.png'
         });
 
@@ -138,7 +138,7 @@ describe('framefusion', async () => {
     it('Should get height', async () => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
-            inputFile: TEST_VIDEO,
+            inputFileOrUrl: TEST_VIDEO,
             outputFile: './output/frame-%04d.png'
         });
 
@@ -157,7 +157,7 @@ describe('framefusion', async () => {
         it.skip('Should dump an entire mp4', async () => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
-                inputFile: TEST_VIDEO,
+                inputFileOrUrl: TEST_VIDEO,
                 outputFile: './output/frame-%04d.png',
                 threadCount: 8,
             }) as BeamcoderExtractor;
@@ -180,7 +180,7 @@ describe('framefusion', async () => {
         it('Should dump an entire mp4 [smaller video version]', async () => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
-                inputFile: TEST_VIDEO_SMALLER,
+                inputFileOrUrl: TEST_VIDEO_SMALLER,
                 outputFile: './output/frame-%04d.png',
                 threadCount: 8,
             }) as BeamcoderExtractor;
@@ -203,7 +203,7 @@ describe('framefusion', async () => {
         it('Should read a mp4 - without dumping frames', async () => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
-                inputFile: TEST_VIDEO_SMALLER,
+                inputFileOrUrl: TEST_VIDEO_SMALLER,
                 threadCount: 8,
             }) as BeamcoderExtractor;
 
@@ -229,7 +229,7 @@ describe('framefusion', async () => {
         it('Should read a mp4 with specified pixel format', async () => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
-                inputFile: TEST_VIDEO_SMALLER,
+                inputFileOrUrl: TEST_VIDEO_SMALLER,
                 threadCount: 8,
                 outputPixelFormat: 'argb'
             }) as BeamcoderExtractor;
@@ -247,7 +247,7 @@ describe('framefusion', async () => {
         it('Should seek and dump frames', async () => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
-                inputFile: TEST_VIDEO_SMALLER,
+                inputFileOrUrl: TEST_VIDEO_SMALLER,
                 outputFile: './output/frame-%04d.png',
                 threadCount: 8,
             }) as BeamcoderExtractor;
@@ -274,7 +274,7 @@ describe('framefusion', async () => {
         it('Should seek and dump frames precisely', async () => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
-                inputFile: './test/samples/countTo60.mp4',
+                inputFileOrUrl: './test/samples/countTo60.mp4',
                 outputFile: './output/frame-%04d.png',
                 threadCount: 8,
             }) as BeamcoderExtractor;
@@ -303,7 +303,7 @@ describe('framefusion', async () => {
         it('Should dump frames and pause in-between', async () => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
-                inputFile: './test/samples/countTo60.mp4',
+                inputFileOrUrl: './test/samples/countTo60.mp4',
                 outputFile: './output/frame-%04d.png',
                 threadCount: 8,
             }) as BeamcoderExtractor;
@@ -338,7 +338,7 @@ describe('framefusion', async () => {
         it('Should seek and dump all frames in the video', async () => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
-                inputFile: './test/samples/countTo60.mp4',
+                inputFileOrUrl: './test/samples/countTo60.mp4',
                 threadCount: 8,
             }) as BeamcoderExtractor;
 
@@ -358,7 +358,7 @@ describe('framefusion', async () => {
         it('Should seek and dump all frames in the video [other video]', async () => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
-                inputFile: TEST_VIDEO_LOW_FRAMERATE,
+                inputFileOrUrl: TEST_VIDEO_LOW_FRAMERATE,
                 threadCount: 8,
             }) as BeamcoderExtractor;
 
@@ -378,7 +378,7 @@ describe('framefusion', async () => {
         it('Should seek and dump frames at different points in the video', async () => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
-                inputFile: './test/samples/countTo60.mp4',
+                inputFileOrUrl: './test/samples/countTo60.mp4',
                 threadCount: 8,
             });
 
@@ -415,7 +415,7 @@ describe('framefusion', async () => {
         it.skip('Should seek and dump all frames in the video [big video]', async () => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
-                inputFile: TEST_VIDEO,
+                inputFileOrUrl: TEST_VIDEO,
                 outputFile: './output/frame-%04d.png',
                 threadCount: 8,
             }) as BeamcoderExtractor;
@@ -440,7 +440,7 @@ describe('framefusion', async () => {
     it('Should interpolate frames (fast)', async () => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
-            inputFile: TEST_VIDEO_LOW_FRAMERATE,
+            inputFileOrUrl: TEST_VIDEO_LOW_FRAMERATE,
             outputFile: './output/frame-%04d.png',
             threadCount: 8,
             interpolateFps: 25,
@@ -472,7 +472,7 @@ describe('framefusion', async () => {
     it('Should minterpolate frames (high-quality)', async () => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
-            inputFile: TEST_VIDEO_LOW_FRAMERATE,
+            inputFileOrUrl: TEST_VIDEO_LOW_FRAMERATE,
             outputFile: './output/frame-%04d.png',
             threadCount: 8,
             interpolateFps: 25,
@@ -505,7 +505,7 @@ describe('framefusion', async () => {
     it('Should open a file from the network and dump all frames  [smaller video version]', async () => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
-            url: `http://127.0.0.1:${TEST_SERVER_PORT}/test/samples/bbb-smaller-faststart.mp4`,
+            inputFileOrUrl: `http://127.0.0.1:${TEST_SERVER_PORT}/test/samples/bbb-smaller-faststart.mp4`,
             outputFile: './output/frame-%04d.png',
         }) as BeamcoderExtractor;
 
@@ -527,7 +527,7 @@ describe('framefusion', async () => {
     it.skip('Should open a file from the network and dump all frames', async () => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
-            url: `http://127.0.0.1:${TEST_SERVER_PORT}/test/samples/bbb10m.mp4`,
+            inputFileOrUrl: `http://127.0.0.1:${TEST_SERVER_PORT}/test/samples/bbb10m.mp4`,
             outputFile: './output/frame-%04d.png',
         }) as BeamcoderExtractor;
 
