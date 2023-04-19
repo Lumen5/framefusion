@@ -2,7 +2,7 @@ import tmp from 'tmp';
 const fs = require('fs-extra');
 import path from "path";
 import https from "node:https";
-import {ClientRequest} from "node:http";
+import {ClientRequest} from "http";
 import http from "http";
 
 class CancelRequestError extends Error { };
