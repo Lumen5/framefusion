@@ -13,7 +13,7 @@ export default defineConfig({
         rollupOptions: {
             // Some libraries do not work well with Rollup and should be listed here.
             // Examples are 'gl' and 'fs'.
-            external: ['beamcoder'],
+            external: ['beamcoder', 'http', 'https'],
         },
         sourcemap: true,
     },
