@@ -30,7 +30,7 @@ WORKDIR /framefusion
 
 RUN . "$HOME/.nvm/nvm.sh"\
     && nvm install 14.18\
-    && nvm use 14.18
+    && nvm use 14.18\
+    && npm install --global yarn
 
-
-ENTRYPOINT . "$HOME/.nvm/nvm.sh" && npm ci && npm run test run
+ENTRYPOINT . "$HOME/.nvm/nvm.sh" && yarn install --frozen-lockfile && yarn run test run

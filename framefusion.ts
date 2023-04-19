@@ -44,11 +44,11 @@ export interface Extractor {
 //
 // It can be useful to test code directly here and run it with:
 //
-//     npm run debug
+//     yarn run debug
 //
 // Or, with chrome/vs code debugging:
 //
-//     npm run debug:debug
+//     yarn run debug:debug
 //
 // And then visit chrome:///inspect, you should see an entry for this script.
 //
