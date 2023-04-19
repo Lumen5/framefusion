@@ -1,31 +1,31 @@
 import { BeamcoderExtractor } from './src/backends/beamcoder.js';
 
 export type Frame = {
-    pts: number,
+    pts: number;
     data: Array<Buffer>;
-    width: number
-    height: number
+    width: number;
+    height: number;
 };
 
 export type InterpolateMode = 'fast' | 'high-quality';
 
 export type ExtractorArgs = {
-    inputFileOrUrl?:        string;
-    outputFile?:       string,
-    threadCount?:      number,
-    endTime?:          number;
-    interpolateFps?:   number;
-    interpolateMode?:  InterpolateMode;
+    inputFileOrUrl?: string;
+    outputFile?: string;
+    threadCount?: number;
+    endTime?: number;
+    interpolateFps?: number;
+    interpolateMode?: InterpolateMode;
     // ffmpeg:    https://ffmpeg.org/doxygen/trunk/pixfmt_8h.html#a9a8e335cf3be472042bc9f0cf80cd4c5
     // gstreamer: https://gstreamer.freedesktop.org/documentation/video/video-format.html?gi-language=c#GstVideoFormat
-    outputPixelFormat?: 'rgba' | 'argb' | 'rgb24' | 'yuvj422p'
+    outputPixelFormat?: 'rgba' | 'argb' | 'rgb24' | 'yuvj422p';
 };
 
 export interface Extractor {
     // There is also a static "create" method, but typescript does not like it.
     // create(args: ExtractorArgs): Promise<Extractor>;
 
-    init(args: ExtractorArgs): Promise<void>;
+    init(_args: ExtractorArgs): Promise<void>;
 
     get duration(): number;
 

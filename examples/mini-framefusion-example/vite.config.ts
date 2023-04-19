@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite';
 import path from 'path';
+import { defineConfig } from 'vite';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -8,7 +8,7 @@ export default defineConfig({
             formats: ['es'],
             entry: path.resolve(__dirname, 'main.ts'),
             name: 'main.ts',
-            fileName: (format) => `main.${format}.js`
+            fileName: (format) => `main.${format}.js`,
         },
         rollupOptions: {
             input: 'main.ts',
