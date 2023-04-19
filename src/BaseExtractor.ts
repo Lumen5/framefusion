@@ -10,7 +10,6 @@ export class BaseExtractor implements Extractor {
     }
 
     async init({
-        url,
         inputFileOrUrl,
         outputFile,
         threadCount = 8,
