@@ -523,10 +523,6 @@ describe('framefusion', async () => {
         extractor.dispose();
     }, 50000);
 
-    it('fails', () => {
-        expect(false).to.be.true;
-    });
-
     // Skipped because this test is pretty slow.
     it.skip('Should open a file from the network and dump all frames', async () => {
         // Arrange
