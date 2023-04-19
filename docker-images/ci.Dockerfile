@@ -33,4 +33,4 @@ RUN . "$HOME/.nvm/nvm.sh"\
     && nvm use 14.18
 
 
-ENTRYPOINT . "$HOME/.nvm/nvm.sh" && npm ci --include=dev && npm run test run
+ENTRYPOINT . "$HOME/.nvm/nvm.sh" && npm ci --also=dev && npm run test run
