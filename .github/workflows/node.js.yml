@@ -15,4 +15,3 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - run: docker build -t framefusion-ci -f ./docker-images/ci.Dockerfile . && docker run -t framefusion-ci
-    - run: npm test run
