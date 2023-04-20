@@ -101,7 +101,7 @@ describe('framefusion', () => {
         extractor.dispose();
     });
 
-    it('Should get width', async() => {
+    it('should get width', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
             inputFileOrUrl: TEST_VIDEO,
@@ -136,30 +136,6 @@ describe('framefusion', () => {
     });
 
     describe('Continuous dumping', () => {
-        // This should always work, but skipped because it's pretty slow
-        it.skip('Should dump an entire mp4', async() => {
-            // Arrange
-            const extractor = await BeamcoderExtractor.create({
-                inputFileOrUrl: TEST_VIDEO,
-                outputFile: './output/frame-%04d.png',
-                threadCount: 8,
-            }) as BeamcoderExtractor;
-
-            // Act
-            const p1 = performance.now();
-            await extractor.readFrames();
-            const p2 = performance.now();
-            console.log('Time to dump all frames (ms): ', p2 - p1);
-
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            expect(fileExistsSync('./output/frame-0001.png')).to.be.true;
-            expect(fileExistsSync('./output/frame-0600.png')).to.be.true;
-
-            // Cleanups
-            extractor.dispose();
-        }, 50000);
-
         it('Should dump an entire mp4 [smaller video version]', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
@@ -209,7 +185,7 @@ describe('framefusion', () => {
             extractor.dispose();
         }, 50000);
 
-        it('Should read a mp4 with specified pixel format', async() => {
+        it.concurrent('Should read a mp4 with specified pixel format', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: TEST_VIDEO_SMALLER,
@@ -318,7 +294,7 @@ describe('framefusion', () => {
     });
 
     describe('Dump frame at time', () => {
-        it('Should seek and dump all frames in the video', async() => {
+        it.concurrent('Should seek and dump all frames in the video', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: './test/samples/countTo60.mp4',
@@ -338,7 +314,7 @@ describe('framefusion', () => {
             extractor.dispose();
         }, 2000);
 
-        it('Should seek and dump all frames in the video [other video]', async() => {
+        it.concurrent('Should seek and dump all frames in the video [other video]', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: TEST_VIDEO_LOW_FRAMERATE,
@@ -358,7 +334,7 @@ describe('framefusion', () => {
             extractor.dispose();
         }, 10000);
 
-        it('Should seek and dump frames at different points in the video', async() => {
+        it.concurrent('Should seek and dump frames at different points in the video', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: './test/samples/countTo60.mp4',
@@ -395,11 +371,10 @@ describe('framefusion', () => {
             extractor.dispose();
         }, 50000);
 
-        it.skip('Should seek and dump all frames in the video [big video]', async() => {
+        it.concurrent('Should seek and dump frames in a video [big video]', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: TEST_VIDEO,
-                outputFile: './output/frame-%04d.png',
                 threadCount: 8,
             }) as BeamcoderExtractor;
 
@@ -408,7 +383,7 @@ describe('framefusion', () => {
 
             // Act & assert
             const p1 = performance.now();
-            for (let i = 0; i < extractor.duration * 60; i++) {
+            for (let i = 0; i < 3; i++) {
                 const frame = await extractor.getFrameAtTime(i / 60.0 + FRAME_SYNC_DELTA);
                 expect(Math.round(extractor.ptsToTime(frame.pts) * 60)).to.equal(i);
             }
