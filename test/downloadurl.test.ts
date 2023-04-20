@@ -3,10 +3,10 @@ import {
     it
 } from 'vitest';
 import { fileExistsSync } from 'tsconfig-paths/lib/filesystem';
-import {DownloadVideoURL} from "../src/DownloadVideoURL";
+import { DownloadVideoURL } from '../src/DownloadVideoURL';
 
 describe('downloadUrl', () => {
-    it('can download url', async () => {
+    it('can download url', async() => {
         const url = 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4';
         const downloadUrl = new DownloadVideoURL(url);
         await downloadUrl.download();
@@ -14,9 +14,9 @@ describe('downloadUrl', () => {
         expect(fileExistsSync(downloadUrl.filepath)).to.be.true;
     });
 
-    it('deletes file when cleared', async () => {
+    it('deletes file when cleared', async() => {
         const url = 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4';
-        let downloadUrl = new DownloadVideoURL(url);
+        const downloadUrl = new DownloadVideoURL(url);
         await downloadUrl.download();
         const filepath = downloadUrl.filepath;
 

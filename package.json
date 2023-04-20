@@ -5,7 +5,6 @@
   "scripts": {
     "docs": "typedoc framefusion.ts",
     "tsc": "tsc",
-    "dev": "vite",
     "build": "tsc && vite build && tsc --declaration",
     "prepare": "yarn run build",
     "preview": "vite preview",
@@ -14,14 +13,16 @@
     "test:debug": "vitest --inspect-brk --single-thread",
     "test-ui": "vitest --ui",
     "vite-node": "vite-node",
-    "debug": " yarn run build && node dist/framefusion.es.js",
-    "debug:debug": " yarn run build && node --enable-source-maps --inspect-brk dist/framefusion.es.js"
+    "dev": " yarn run build && node dist/framefusion.es.js",
+    "debug": " yarn run build && node --enable-source-maps --inspect-brk dist/framefusion.es.js",
+    "lint": "eslint ./ --ext .js,.ts"
   },
   "dependencies": {
     "beamcoder": "^0.7.1",
     "fs-extra": "^11.1.1",
     "got": "^12.6.0",
     "http-server": "^14.1.1",
+    "rollup-plugin-auto-external": "^2.0.0",
     "tmp": "^0.2.1",
     "tsconfig-paths": "^4.1.2"
   },
@@ -32,7 +33,16 @@
     "@types/mocha": "^10.0.1",
     "@types/node": "^18.14.6",
     "@types/sinon": "^10.0.13",
+    "@typescript-eslint/eslint-plugin": "^5.59.0",
+    "@typescript-eslint/parser": "^5.59.0",
     "@vitest/ui": "^0.29.8",
+    "eslint": "^8.38.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^6.1.1",
+    "eslint-plugin-standard": "^5.0.0",
+    "eslint-plugin-vitest": "^0.1.4",
     "express": "^4.18.2",
     "jest-image-snapshot": "^6.1.0",
     "rimraf": "^4.4.1",
@@ -41,6 +51,7 @@
     "typescript": "^4.9.5",
     "vite": "^4.1.0",
     "vite-node": "^0.29.2",
+    "vite-plugin-eslint": "^1.8.1",
     "vitest": "^0.29.2"
   },
   "description": "Video library",

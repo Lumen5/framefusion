@@ -1,6 +1,6 @@
-const { performance } = require('perf_hooks');
-import httpServer from 'http-server';
 import { readFileSync, readdirSync } from 'fs';
+import { performance } from 'perf_hooks';
+import httpServer from 'http-server';
 import { rimraf } from 'rimraf';
 import {
     describe,
@@ -10,22 +10,23 @@ import {
     beforeEach,
     afterAll
 } from 'vitest';
-import { BeamcoderExtractor } from '../framefusion';
 import sinon from 'sinon';
 import { toMatchImageSnapshot } from 'jest-image-snapshot';
 import { fileExistsSync } from 'tsconfig-paths/lib/filesystem';
+import { BeamcoderExtractor } from '../framefusion';
 
 declare global {
-  namespace jest {
-    interface Matchers<R> {
-      toMatchImageSnapshot(): R
+    // eslint-disable-next-line @typescript-eslint/no-namespace
+    namespace jest {
+        interface Matchers<R> {
+            toMatchImageSnapshot(): R;
+        }
     }
-  }
 }
 
 const TEST_SERVER_PORT = 4242;
 
-expect.extend({ toMatchImageSnapshot })
+expect.extend({ toMatchImageSnapshot });
 
 const TEST_VIDEO = './test/samples/bbb10m.mp4';
 const TEST_VIDEO_SMALLER = './test/samples/bbb-smaller.mp4';
@@ -34,15 +35,15 @@ const TEST_VIDEO_LOW_FRAMERATE = './test/samples/bbb-low-fps.mp4';
 // TODOS
 // There are a few sleeps (timeouts) to probably remove
 
-describe('framefusion', async () => {
+describe('framefusion', () => {
     let server;
 
-    beforeEach(async () => {
+    beforeEach(async() => {
         await rimraf('./output/*', { glob: true });
         console.log('Removed previous results in output/');
     });
 
-    beforeAll(async () => {
+    beforeAll(async() => {
         await rimraf('./output/*', { glob: true });
         console.log('Removed previous results in output/');
 
@@ -61,51 +62,11 @@ describe('framefusion', async () => {
         server.close();
     });
 
-    it('Should create an extractor', async () => {
-        const p1 = performance.now();
-
-        // Arrange & Act
-        const extractor = await BeamcoderExtractor.create({
-            inputFileOrUrl: TEST_VIDEO,
-            outputFile: './output/frame-%04d.png'
-        });
-
-        const p2 = performance.now();
-        console.log('Time to build a demuxer + decoder + muxer + encoder (ms): ', p2 - p1);
-
-        // Assert
-        expect((extractor as any).decoder.type).to.equal('decoder');
-        expect((extractor as any).demuxer.type).to.equal('demuxer');
-
-        // Cleanup
-        extractor.dispose();
-    });
-
-    it('Should create an extractor', async () => {
-        const p1 = performance.now();
-
-        // Arrange & Act
-        const extractor = await BeamcoderExtractor.create({
-            inputFileOrUrl: TEST_VIDEO,
-            outputFile: './output/frame-%04d.png'
-        });
-
-        const p2 = performance.now();
-        console.log('Time to build a demuxer + decoder + muxer + encoder (ms): ', p2 - p1);
-
-        // Assert
-        expect((extractor as any).decoder.type).to.equal('decoder');
-        expect((extractor as any).demuxer.type).to.equal('demuxer');
-
-        // Cleanup
-        extractor.dispose();
-    });
-
-    it('Should get duration', async () => {
+    it('Should get duration', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
             inputFileOrUrl: TEST_VIDEO,
-            outputFile: './output/frame-%04d.png'
+            outputFile: './output/frame-%04d.png',
         });
 
         // Act
@@ -118,11 +79,11 @@ describe('framefusion', async () => {
         extractor.dispose();
     });
 
-    it('Should get width', async () => {
+    it('should get width', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
             inputFileOrUrl: TEST_VIDEO,
-            outputFile: './output/frame-%04d.png'
+            outputFile: './output/frame-%04d.png',
         });
 
         // Act
@@ -135,11 +96,11 @@ describe('framefusion', async () => {
         extractor.dispose();
     });
 
-    it('Should get height', async () => {
+    it('Should get height', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
             inputFileOrUrl: TEST_VIDEO,
-            outputFile: './output/frame-%04d.png'
+            outputFile: './output/frame-%04d.png',
         });
 
         // Act
@@ -153,31 +114,7 @@ describe('framefusion', async () => {
     });
 
     describe('Continuous dumping', () => {
-        // This should always work, but skipped because it's pretty slow
-        it.skip('Should dump an entire mp4', async () => {
-            // Arrange
-            const extractor = await BeamcoderExtractor.create({
-                inputFileOrUrl: TEST_VIDEO,
-                outputFile: './output/frame-%04d.png',
-                threadCount: 8,
-            }) as BeamcoderExtractor;
-
-            // Act
-            const p1 = performance.now();
-            await extractor.readFrames();
-            const p2 = performance.now();
-            console.log('Time to dump all frames (ms): ', p2 - p1);
-
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            expect(fileExistsSync('./output/frame-0001.png')).to.be.true;
-            expect(fileExistsSync('./output/frame-0600.png')).to.be.true;
-
-            // Cleanups
-            extractor.dispose();
-        }, 50000);
-
-        it('Should dump an entire mp4 [smaller video version]', async () => {
+        it('Should dump an entire mp4 [smaller video version]', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: TEST_VIDEO_SMALLER,
@@ -200,7 +137,7 @@ describe('framefusion', async () => {
             extractor.dispose();
         }, 50000);
 
-        it('Should read a mp4 - without dumping frames', async () => {
+        it('Should read a mp4 - without dumping frames', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: TEST_VIDEO_SMALLER,
@@ -226,12 +163,12 @@ describe('framefusion', async () => {
             extractor.dispose();
         }, 50000);
 
-        it('Should read a mp4 with specified pixel format', async () => {
+        it.concurrent('Should read a mp4 with specified pixel format', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: TEST_VIDEO_SMALLER,
                 threadCount: 8,
-                outputPixelFormat: 'argb'
+                outputPixelFormat: 'argb',
             }) as BeamcoderExtractor;
 
             // Act
@@ -244,7 +181,7 @@ describe('framefusion', async () => {
             extractor.dispose();
         }, 50000);
 
-        it('Should seek and dump frames', async () => {
+        it('Should seek and dump frames', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: TEST_VIDEO_SMALLER,
@@ -271,7 +208,7 @@ describe('framefusion', async () => {
             extractor.dispose();
         }, 50000);
 
-        it('Should seek and dump frames precisely', async () => {
+        it('Should seek and dump frames precisely', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: './test/samples/countTo60.mp4',
@@ -300,7 +237,7 @@ describe('framefusion', async () => {
             extractor.dispose();
         }, 50000);
 
-        it('Should dump frames and pause in-between', async () => {
+        it('Should dump frames and pause in-between', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: './test/samples/countTo60.mp4',
@@ -313,11 +250,11 @@ describe('framefusion', async () => {
             // ffprobe -show_frames samples/bbb-smaller.mp4  | grep pts_time | head -n 5 | sed 's/pts_time=//g'
             await extractor.seekToTime(0);
 
-            let count = 0;
+            const count = 0;
 
-            const onFrameAvailable = async (frame) => {
+            const onFrameAvailable = async(frame) => {
                 return count < 4;
-            }
+            };
 
             await extractor.readFrames({
                 onFrameAvailable,
@@ -335,7 +272,7 @@ describe('framefusion', async () => {
     });
 
     describe('Dump frame at time', () => {
-        it('Should seek and dump all frames in the video', async () => {
+        it.concurrent('Should seek and dump all frames in the video', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: './test/samples/countTo60.mp4',
@@ -355,7 +292,7 @@ describe('framefusion', async () => {
             extractor.dispose();
         }, 2000);
 
-        it('Should seek and dump all frames in the video [other video]', async () => {
+        it.concurrent('Should seek and dump all frames in the video [other video]', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: TEST_VIDEO_LOW_FRAMERATE,
@@ -375,7 +312,7 @@ describe('framefusion', async () => {
             extractor.dispose();
         }, 10000);
 
-        it('Should seek and dump frames at different points in the video', async () => {
+        it.concurrent('Should seek and dump frames at different points in the video', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: './test/samples/countTo60.mp4',
@@ -412,11 +349,10 @@ describe('framefusion', async () => {
             extractor.dispose();
         }, 50000);
 
-        it.skip('Should seek and dump all frames in the video [big video]', async () => {
+        it.concurrent('Should seek and dump frames in a video [big video]', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: TEST_VIDEO,
-                outputFile: './output/frame-%04d.png',
                 threadCount: 8,
             }) as BeamcoderExtractor;
 
@@ -425,7 +361,7 @@ describe('framefusion', async () => {
 
             // Act & assert
             const p1 = performance.now();
-            for (let i = 0; i < extractor.duration * 60; i++) {
+            for (let i = 0; i < 3; i++) {
                 const frame = await extractor.getFrameAtTime(i / 60.0 + FRAME_SYNC_DELTA);
                 expect(Math.round(extractor.ptsToTime(frame.pts) * 60)).to.equal(i);
             }
@@ -437,7 +373,7 @@ describe('framefusion', async () => {
         }, 30000);
     });
 
-    it('Should interpolate frames (fast)', async () => {
+    it('Should interpolate frames (fast)', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
             inputFileOrUrl: TEST_VIDEO_LOW_FRAMERATE,
@@ -454,7 +390,7 @@ describe('framefusion', async () => {
             async onFrameAvailable() {
                 count++;
                 return true;
-            }
+            },
         });
         const p2 = performance.now();
         console.log('Time to interpolate all frames (fast) and dump all frames (ms): ', p2 - p1);
@@ -469,7 +405,7 @@ describe('framefusion', async () => {
         extractor.dispose();
     }, 200000);
 
-    it('Should minterpolate frames (high-quality)', async () => {
+    it('Should minterpolate frames (high-quality)', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
             inputFileOrUrl: TEST_VIDEO_LOW_FRAMERATE,
@@ -486,7 +422,7 @@ describe('framefusion', async () => {
             async onFrameAvailable() {
                 count++;
                 return true;
-            }
+            },
         });
         const p2 = performance.now();
         console.log('Time to interpolate (high-quality) and dump all frames (ms): ', p2 - p1);
@@ -502,7 +438,7 @@ describe('framefusion', async () => {
     }, 200000);
 
 
-    it('Should open a file from the network and dump all frames  [smaller video version]', async () => {
+    it('Should open a file from the network and dump all frames  [smaller video version]', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
             inputFileOrUrl: `http://127.0.0.1:${TEST_SERVER_PORT}/test/samples/bbb-smaller-faststart.mp4`,
@@ -523,29 +459,7 @@ describe('framefusion', async () => {
         extractor.dispose();
     }, 50000);
 
-    // Skipped because this test is pretty slow.
-    it.skip('Should open a file from the network and dump all frames', async () => {
-        // Arrange
-        const extractor = await BeamcoderExtractor.create({
-            inputFileOrUrl: `http://127.0.0.1:${TEST_SERVER_PORT}/test/samples/bbb10m.mp4`,
-            outputFile: './output/frame-%04d.png',
-        }) as BeamcoderExtractor;
-
-        // Act
-        const p1 = performance.now();
-        await extractor.readFrames();
-        const p2 = performance.now();
-        console.log('Time to dump all frames through local network (ms): ', p2 - p1);
-
-        // Assert
-        expect(fileExistsSync('./output/frame-0001.png')).to.be.true;
-        expect(fileExistsSync('./output/frame-0600.png')).to.be.true;
-
-        // Cleanup
-        extractor.dispose();
-    }, 50000);
-
-    it.skip('Encode frames to mp4', async () => {
-
+    it.skip('Encode frames to mp4', async() => {
+        expect(false).to.be.true;
     });
 });

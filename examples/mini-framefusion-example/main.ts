@@ -5,7 +5,7 @@ const inputFileOrUrl = './video.mp4';
 async function run() {
     const extractor = await BeamcoderExtractor.create({
         inputFileOrUrl,
-        //outputFile: 'image-%04d.png', // Uncomment to ouput files to disk
+        // outputFile: 'image-%04d.png', // Uncomment to ouput files to disk
         outputPixelFormat: 'rgba',
     });
 

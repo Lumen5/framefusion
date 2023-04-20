@@ -1,11 +1,11 @@
+import path from 'path';
+import https from 'node:https';
+import type { ClientRequest } from 'http';
+import http from 'http';
 import tmp from 'tmp';
-const fs = require('fs-extra');
-import path from "path";
-import https from "node:https";
-import {ClientRequest} from "http";
-import http from "http";
+import fs from 'fs-extra';
 
-class CancelRequestError extends Error { };
+class CancelRequestError extends Error { }
 
 /**
  * Downloads a video file from a given URL as a temporary file. When the object is cleared, the temporary file is
@@ -57,11 +57,11 @@ export class DownloadVideoURL {
                     });
                 });
                 this.#httpRequest.on('error', (e) => {
-                if (e instanceof CancelRequestError) {
-                    return;
-                }
-                reject(e);
-            });
+                    if (e instanceof CancelRequestError) {
+                        return;
+                    }
+                    reject(e);
+                });
             }
             catch (e) {
                 reject(e);
