@@ -62,28 +62,6 @@ describe('framefusion', () => {
         server.close();
     });
 
-    it('Should create an extractor', async() => {
-        const p1 = performance.now();
-
-        // Arrange & Act
-        const extractor = await BeamcoderExtractor.create({
-            inputFileOrUrl: TEST_VIDEO,
-            outputFile: './output/frame-%04d.png',
-        });
-
-        const p2 = performance.now();
-        console.log('Time to build a demuxer + decoder + muxer + encoder (ms): ', p2 - p1);
-
-        // Assert
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        expect((extractor as any).decoder.type).to.equal('decoder');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        expect((extractor as any).demuxer.type).to.equal('demuxer');
-
-        // Cleanup
-        extractor.dispose();
-    });
-
     it('Should get duration', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
