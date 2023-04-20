@@ -10,3 +10,4 @@ __image_snapshots__/__diff_output__/**
 
 # We are using yarn, this is a npm file
 package-lock.json
+__diff_output__
