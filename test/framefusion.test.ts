@@ -481,28 +481,6 @@ describe('framefusion', () => {
         extractor.dispose();
     }, 50000);
 
-    // Skipped because this test is pretty slow.
-    it.skip('Should open a file from the network and dump all frames', async() => {
-        // Arrange
-        const extractor = await BeamcoderExtractor.create({
-            inputFileOrUrl: `http://127.0.0.1:${TEST_SERVER_PORT}/test/samples/bbb10m.mp4`,
-            outputFile: './output/frame-%04d.png',
-        }) as BeamcoderExtractor;
-
-        // Act
-        const p1 = performance.now();
-        await extractor.readFrames();
-        const p2 = performance.now();
-        console.log('Time to dump all frames through local network (ms): ', p2 - p1);
-
-        // Assert
-        expect(fileExistsSync('./output/frame-0001.png')).to.be.true;
-        expect(fileExistsSync('./output/frame-0600.png')).to.be.true;
-
-        // Cleanup
-        extractor.dispose();
-    }, 50000);
-
     it.skip('Encode frames to mp4', async() => {
         expect(false).to.be.true;
     });
