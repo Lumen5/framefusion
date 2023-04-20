@@ -43,33 +43,29 @@ export interface Extractor {
 //
 // It can be useful to test code directly here and run it with:
 //
-//     yarn run debug
+//     yarn run dev
 //
 // Or, with chrome/vs code debugging:
 //
-//     yarn run debug:debug
+//     yarn run debug
 //
 // And then visit chrome:///inspect, you should see an entry for this script.
 //
 // Example:
 //
 // const TEST_VIDEO = './samples/bbb10m.mp4';
-// export const run = async () => {
-//     const pts = 69632;
+// export const run = async() => {
 //     // Arrange
 //     const extractor = await BeamcoderExtractor.create({
 //         inputFileOrUrl: TEST_VIDEO,
-//         outputFile: `./output/frame-${pts}-%04d.png`,
 //     });
 //
-//     await extractor.seekToPTS(pts);
-//     const frame = await extractor.readFrames({
-//         onFrameAvailable: () => false
-//     });
+//     const frame = await extractor.getFrameAtTime(0.3);
+//     console.log(frame);
 //     extractor.dispose();
 // };
 //
 // run();
-
+//
 
 export { BeamcoderExtractor };

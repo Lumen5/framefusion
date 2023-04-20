@@ -1,6 +1,7 @@
 import path from 'path';
 import { defineConfig } from 'vite';
 import eslint from 'vite-plugin-eslint';
+import autoExternal from 'rollup-plugin-auto-external';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -12,9 +13,7 @@ export default defineConfig({
             formats: ['es'],
         },
         rollupOptions: {
-            // Some libraries do not work well with Rollup and should be listed here.
-            // Examples are 'gl' and 'fs'.
-            external: ['beamcoder', 'http', 'https', 'fs-extra', 'fs'],
+            external: [],
         },
         sourcemap: true,
     },
@@ -24,5 +23,5 @@ export default defineConfig({
     optimizeDeps: {
         disabled: true,
     },
-    plugins: [eslint()],
+    plugins: [autoExternal(), eslint()],
 });
