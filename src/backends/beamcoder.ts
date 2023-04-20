@@ -12,7 +12,7 @@ import type {
 import {
     BaseExtractor
 } from '../BaseExtractor.js';
-import { DownloadVideoURL } from '../DownloadVideoURL';
+import { DownloadVideoURL } from '../DownloadVideoURL.js';
 
 const LOG_PACKET_FLOW = false;
 const LOG_SINGLE_FRAME_DUMP_FLOW = false;
