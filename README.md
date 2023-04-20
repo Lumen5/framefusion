@@ -68,7 +68,7 @@ We want to limit framefusion to 2 simple roles:
  1. Extracting frames from videos
  2. Combining frames into a video
 
-We want to design the API to be as minimal as possible to acheive these two goals.
+We want to design the API to be as minimal as possible to achieve these two goals.
 
 We also want to build the library in a way that we can provide different backends to acheive these goals, but still keep a similar interface.
 
