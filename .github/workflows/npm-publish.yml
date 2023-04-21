@@ -16,9 +16,11 @@ jobs:
         with:
           node-version: 14
           registry-url: https://registry.npmjs.org/
-      - run: ./scripts/install_beamcoder_dependencies.sh
+      - run: sudo ./scripts/install_beamcoder_dependencies.sh
       - run: yarn install --frozen-lockfile
       - run: yarn build
       - run: yarn publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
+          LIBRARY_PATH=: /usr/local/lib/libav/"
+          CPATH: "/usr/local/include/libav/"
