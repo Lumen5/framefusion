@@ -22,5 +22,5 @@ jobs:
       - run: yarn publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
-          LIBRARY_PATH=: /usr/local/lib/libav/"
+          LIBRARY_PATH: "/usr/local/lib/libav/"
           CPATH: "/usr/local/include/libav/"
