@@ -10,6 +10,9 @@ on:
 jobs:
   publish-npm:
     runs-on: ubuntu-latest
+    env:
+      LIBRARY_PATH: /usr/local/lib/libav/
+      CPATH: /usr/local/include/libav/
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -22,5 +25,3 @@ jobs:
       - run: yarn publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
-          LIBRARY_PATH: "/usr/local/lib/libav/"
-          CPATH: "/usr/local/include/libav/"
