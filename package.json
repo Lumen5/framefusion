@@ -55,13 +55,12 @@
     "vitest": "^0.29.2"
   },
   "description": "Video library",
-  "main": "./dist/framefusion.es.js",
-  "types": "./dist/framefusion.d.ts",
-  "module": "./dist/framefusion.es.js",
+  "main": "./dist/framefusion.js",
   "exports": {
     ".": {
-      "types": "./dist/framefusion.d.ts",
-      "import": "./dist/framefusion.es.js"
+      "require": "./dist/framefusion.cjs",
+      "import": "./dist/framefusion.es.js",
+      "types": "./dist/framefusion.d.ts"
     }
   },
   "files": [

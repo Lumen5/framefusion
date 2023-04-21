@@ -9,11 +9,20 @@ export default defineConfig({
         lib: {
             entry: path.resolve(__dirname, 'framefusion.ts'),
             name: 'framefusion.ts',
-            fileName: (format) => `framefusion.${format}.js`,
-            formats: ['es'],
+            fileName: (format) => {
+                if (format === 'es') {
+                    return 'framefusion.es.js';
+                }
+                if (format === 'cjs') {
+                    return 'framefusion.cjs';
+                }
+
+                throw new Error(`Please provide a fileName for ${format}`);
+            },
+            formats: ['es', 'cjs'],
         },
         rollupOptions: {
-            external: [],
+            external: ['node:https'],
         },
         sourcemap: true,
     },
