@@ -1,5 +1,5 @@
 {
-  "name": "framefusion",
+  "name": "@lumen5/framefusion",
   "version": "0.0.3",
   "type": "module",
   "scripts": {
