@@ -104,7 +104,7 @@ describe('framefusion', () => {
         server.close();
     });
 
-    it('Should get duration', async() => {
+    it('should get duration', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
             inputFileOrUrl: TEST_VIDEO,
@@ -121,7 +121,7 @@ describe('framefusion', () => {
         extractor.dispose();
     });
 
-    it('Should get source width', async () => {
+    it('should get source width', async () => {
         for (let i = 0; i < ALL_TEST_VIDEOS.length; i++) {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
@@ -140,7 +140,7 @@ describe('framefusion', () => {
         }
     });
 
-    it('Should get source height', async () => {
+    it('should get source height', async () => {
         for (let i = 0; i < ALL_TEST_VIDEOS.length; i++) {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
@@ -158,6 +158,26 @@ describe('framefusion', () => {
             extractor.dispose();
         }
     });
+
+    it('should get frame dimensions', async() => {
+        for (let i = 0; i < ALL_TEST_VIDEOS.length; i++) {
+            // Arrange
+            const extractor = await BeamcoderExtractor.create({
+                inputFileOrUrl: ALL_TEST_VIDEOS[i],
+                outputFile: './output/frame-%04d.png'
+            });
+
+            // Act
+            const frame = await extractor.getFrameAtTime(0);
+
+            // Assert
+            expect(frame.width).to.eq(ALL_TEST_VIDEO_WIDTHS[i]);
+            expect(frame.height).to.eq(ALL_TEST_VIDEO_HEIGHTS[i]);
+
+            // Cleanup
+            extractor.dispose();
+        }
+    })
 
     describe('Continuous dumping', () => {
         it('Should dump an entire mp4 [smaller video version]', async() => {
@@ -482,7 +502,6 @@ describe('framefusion', () => {
         // Cleanup
         extractor.dispose();
     }, 200000);
-
 
     it('Should open a file from the network and dump all frames  [smaller video version]', async() => {
         // Arrange
