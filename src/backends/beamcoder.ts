@@ -1,19 +1,18 @@
-import https from 'https';
-import http from 'http';
-import beamcoder, {
+import type { Stream } from 'stream';
+import type { ReadStream } from 'fs';
+import type {
     Frame
 } from 'beamcoder';
-import { Stream } from 'stream';
-import { ReadStream } from 'fs';
-import {
+import beamcoder from 'beamcoder';
+import type {
     InterpolateMode,
     Extractor,
-    ExtractorArgs,
+    ExtractorArgs
 } from '../../framefusion.js';
 import {
-    BaseExtractor,
+    BaseExtractor
 } from '../BaseExtractor.js';
-import {DownloadVideoURL} from "../DownloadVideoURL";
+import { DownloadVideoURL } from '../DownloadVideoURL.js';
 
 const LOG_PACKET_FLOW = false;
 const LOG_SINGLE_FRAME_DUMP_FLOW = false;
@@ -86,16 +85,16 @@ export const probeStream = stream => ({
  * A filter to convert between color spaces.
  * An example would be YUV to RGB, for mp4 to png conversion.
  */
-const getFilter = async ({
+const getFilter = async({
     stream,
     outputPixelFormat,
     interpolateFps,
     interpolateMode = 'fast',
-} : {
+}: {
     stream: beamcoder.Stream;
     outputPixelFormat: string;
-    interpolateFps?: number,
-    interpolateMode?: InterpolateMode
+    interpolateFps?: number;
+    interpolateMode?: InterpolateMode;
 }): Promise<beamcoder.Filterer> => {
     if (!stream.codecpar.format) {
         return null;
@@ -115,7 +114,7 @@ const getFilter = async ({
         }
     }
 
-    filterSpec = [...filterSpec]
+    filterSpec = [...filterSpec];
 
     const filterSpecStr = filterSpec.join(', ') + '[out0:v]';
 
@@ -137,9 +136,9 @@ const getFilter = async ({
             {
                 name: 'out0:v',
                 pixelFormat: outputPixelFormat,
-            }
+            },
         ],
-        filterSpec: filterSpecStr
+        filterSpec: filterSpecStr,
     });
 };
 
@@ -147,21 +146,21 @@ const getFilter = async ({
  * Class to keep track of the muxer/demuxer/encoder/muxer used while extracting a video to frames.
  */
 export class BeamcoderExtractor extends BaseExtractor implements Extractor {
-    decoder:         beamcoder.Decoder = null;
-    demuxer:         beamcoder.Demuxer = null;
-    encoder:         beamcoder.Encoder = null;
-    muxer:           beamcoder.Muxer = null;
-    filterer:        beamcoder.Filterer = null;
-    packet:          beamcoder.Packet;
-    endTime:         number;
-    #locked:         boolean;
-    #targetPts:      number = 0;
-    demuxerStream:   beamcoder.WritableDemuxerStream;
-    readStream:      ReadStream;
-    lastFrame:       beamcoder.Frame = null;
-    filteredFrames:  beamcoder.Frame[] = [];
+    decoder: beamcoder.Decoder = null;
+    demuxer: beamcoder.Demuxer = null;
+    encoder: beamcoder.Encoder = null;
+    muxer: beamcoder.Muxer = null;
+    filterer: beamcoder.Filterer = null;
+    packet: beamcoder.Packet;
+    endTime: number;
+    #locked: boolean;
+    #targetPts = 0;
+    demuxerStream: beamcoder.WritableDemuxerStream;
+    readStream: ReadStream;
+    lastFrame: beamcoder.Frame = null;
+    filteredFrames: beamcoder.Frame[] = [];
     #streamStopped = false;
-    #flushed: boolean = false;
+    #flushed = false;
 
     /**
      * Encoder/Decoder constuction is async, so it can't be put in a regular constructor.
@@ -191,6 +190,8 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             outputPixelFormat = 'rgb24';
         }
 
+        console.log('init', { inputFileOrUrl, outputFile, threadCount, endTime, interpolateFps, interpolateMode, outputPixelFormat });
+
         //
         //      - Demuxing -
         //
@@ -198,14 +199,17 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         //
 
         let demuxerStream;
-        let demuxer;
 
         if (inputFileOrUrl.startsWith('http')) {
+            console.log('downloading url');
             const downloadUrl = new DownloadVideoURL(inputFileOrUrl);
             await downloadUrl.download();
             inputFileOrUrl = downloadUrl.filepath;
+            console.log('finished downloading');
         }
-        demuxer = await beamcoder.demuxer('file:' + inputFileOrUrl);
+
+        console.log('file mode');
+        const demuxer = await beamcoder.demuxer('file:' + inputFileOrUrl);
 
 
         console.log({ time_base: demuxer.streams[0].time_base });
@@ -255,7 +259,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             stream: demuxer.streams[0],
             outputPixelFormat,
             interpolateFps,
-            interpolateMode
+            interpolateMode,
         });
 
         if (outputFormat) {
@@ -282,7 +286,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             const muxer = await createFrameDumpingMuxer({
                 thread_count: threadCount,
                 filename: outputFile,
-                sourceDemuxer: demuxer
+                sourceDemuxer: demuxer,
             });
 
             this.muxer = muxer;
@@ -337,6 +341,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         // Skip any packets which were read before.
         // at a PTS bigger than the target PTS.
         while (this.packet && this.packet.pts > targetPts) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (this.packet.flags as any) = { DISCARD: true };
             await this.#nextPacket();
         }
@@ -357,7 +362,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     async getFrameAtTime(targetTime: number): Promise<beamcoder.Frame> {
         LOG_SINGLE_FRAME_DUMP_FLOW && console.log(`Requesting to dump a frame at Time(s)=${targetTime}`);
         const targetPts = Math.floor(this.timeToPts(targetTime));
-        return await this.getFrameAtPts(targetPts);
+        return this.getFrameAtPts(targetPts);
     }
 
     /**
@@ -407,8 +412,8 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         // Read packets and dump a single frame.
         let finishReadingCleanlyPromise = null;
 
-        const frame = await new Promise<Beamcoder.Frame>(async resolve => {
-            const onFrameAvailable = async (frame) => {
+        const frame = await new Promise<beamcoder.Frame>(async resolve => {
+            const onFrameAvailable = async(frame) => {
                 LOG_SINGLE_FRAME_DUMP_FLOW && console.log(`Frame available: pts=${frame.pts}`);
 
                 // When we decoded the next frame after targetPts,
@@ -441,7 +446,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
 
                 if (this.packet === null && this.filteredFrames.length === 0 && targetPts >= this.lastFrame.pts) {
                     LOG_SINGLE_FRAME_DUMP_FLOW && console.log(`Last frame has been reached, resolving with last frame, pts=${this.lastFrame.pts}`);
-                    resolve(frame)
+                    resolve(frame);
                     return false;
                 }
 
@@ -502,7 +507,8 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
                 this.#streamStopped = true;
             }
             return packet;
-        } catch (e) {
+        }
+        catch (e) {
             throw e;
         }
     }
@@ -527,9 +533,9 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     }
 
     async #filterFrames(frames) {
-        const result =  await this.filterer.filter([{
+        const result = await this.filterer.filter([{
             name: 'in0:v',
-            frames: frames
+            frames: frames,
         }]);
         this.filteredFrames = result.flatMap(r => r.frames);
         return this.filteredFrames;
@@ -540,7 +546,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      */
     async #processFilteredFrames(frames: Frame[] | null, {
         onFrameAvailable = () => true,
-    } : {
+    }: {
         onFrameAvailable?: (frame: beamcoder.Frame) => boolean | Promise<boolean>;
     }) {
         let needsMore = true;
@@ -561,7 +567,8 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             if (shouldSave) {
                 await this.muxer.writeFrame(imageResult.packets[j]);
                 LOG_PACKET_FLOW && console.log(`wrote image ${JSON.stringify(imageResult.packets[j])}`);
-            } else {
+            }
+            else {
                 LOG_PACKET_FLOW && console.log(`skipped image ${JSON.stringify(imageResult.packets[j])}`);
             }
         }
@@ -570,36 +577,36 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     async #filterAndProcessFrames({
         decoderResult,
         onFrameAvailable,
-    } : {
-        decoderResult?: any,
+    }: {
+        decoderResult?: beamcoder.DecodedFrames;
         /**
          * Return true if we need to read more frames.
          */
         onFrameAvailable: (frame: Frame) => Promise<boolean> | boolean;
     }) {
         const filteredFrames = await this.#filterFrames(decoderResult.frames);
-        let { needsMore } = await this.#processFilteredFrames(filteredFrames, {
+        const { needsMore } = await this.#processFilteredFrames(filteredFrames, {
             onFrameAvailable,
         });
 
         return { needsMore };
-    };
+    }
 
     async #readPacketLoop({
         onFrameAvailable,
-    } : {
+    }: {
         /**
          * Return true if we need to read more frames.
          */
         onFrameAvailable: (frame: Frame) => Promise<boolean> | boolean;
-    }): Promise<{ needsMore: boolean }> {
+    }): Promise<{ needsMore: boolean; }> {
         await this.#nextPacket();
         while (this.packet) {
-            let decoderResult = await this.decoder.decode(this.packet);
+            const decoderResult = await this.decoder.decode(this.packet);
             LOG_PACKET_FLOW && console.log(`Received ${decoderResult.frames.length} decoder frames`);
-            let { needsMore } = await this.#filterAndProcessFrames({
+            const { needsMore } = await this.#filterAndProcessFrames({
                 decoderResult,
-                onFrameAvailable
+                onFrameAvailable,
             });
 
             if (!needsMore) {
@@ -631,11 +638,11 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         LOG_PACKET_FLOW && console.log(`\n                  Flushing encoder`);
         const imageResult = await this.encoder.flush();
         await this.#muxImageResults(imageResult);
-    };
+    }
 
     async #flushFilterAndProcessFrames({
         onFrameAvailable,
-    } : {
+    }: {
         onFrameAvailable: (frame: Frame) => Promise<boolean> | boolean;
     }) {
         LOG_PACKET_FLOW && console.log(`\n                  Flushing decoder`);
@@ -646,9 +653,9 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
 
         this.#flushed = true;
         const decoderResult = await this.decoder.flush();
-        let { needsMore } = await this.#filterAndProcessFrames({
+        const { needsMore } = await this.#filterAndProcessFrames({
             decoderResult,
-            onFrameAvailable
+            onFrameAvailable,
         });
 
         if (!needsMore) {
@@ -677,12 +684,12 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     async readFrames({
         onFrameAvailable,
         flush = true,
-    } : {
+    }: {
         /**
          * Return true if we need to read more frames.
          */
         onFrameAvailable?: (frame: Frame) => Promise<boolean> | boolean;
-        flush?:             boolean;
+        flush?: boolean;
     } = {
         flush: true,
         onFrameAvailable: () => true,
@@ -691,7 +698,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             const originalOnFrameAvailable = onFrameAvailable;
 
             if (this.#hasEncoder) {
-                onFrameAvailable = async (frame): Promise<boolean> => {
+                onFrameAvailable = async(frame): Promise<boolean> => {
                     LOG_PACKET_FLOW && console.log(`About to encode ${frame.pts}.\n`);
                     const imageResult = await this.encoder.encode(frame);
                     await this.#muxImageResults(imageResult);
@@ -704,7 +711,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             }
 
             // First output successively frames which were already decoded and filtered
-            let needsMore = this.#processFilteredFrames([], { onFrameAvailable });
+            const needsMore = this.#processFilteredFrames([], { onFrameAvailable });
             if (!needsMore) {
                 LOG_PACKET_FLOW && console.log('No need to read more after reading buffered frames.');
                 return;
@@ -756,8 +763,8 @@ type OutputFormats = 'mjpeg' | 'png' | 'tiff';
 const createFrameDumpingEncoder = ({
     decoder,
     outputFormat,
-    thread_count
-} : {
+    thread_count,
+}: {
     decoder: beamcoder.Decoder;
     outputFormat: OutputFormats;
     thread_count: number;
@@ -773,22 +780,22 @@ const createFrameDumpingEncoder = ({
         height: decoder.height,
         pix_fmt: colorspace,
         thread_count: thread_count,
-        time_base: [1, 1]
+        time_base: [1, 1],
     });
 };
 
-const createFrameDumpingMuxer = async ({
+const createFrameDumpingMuxer = async({
     filename,
     sourceDemuxer,
     thread_count,
-} : {
+}: {
     filename: string;
     sourceDemuxer: beamcoder.Demuxer;
     thread_count: number;
 }) => {
     const demuxers = beamcoder.demuxers();
     // The iformat is necessary to have a working probe when using a stream
-    let iformat = demuxers[Object.keys(demuxers).find(key => key.indexOf('mp4') > -1)];
+    const iformat = demuxers[Object.keys(demuxers).find(key => key.indexOf('mp4') > -1)];
 
     const muxer = beamcoder.muxer({
         name: 'image2',

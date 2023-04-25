@@ -1,5 +1,7 @@
-import { defineConfig } from 'vite';
 import path from 'path';
+import { defineConfig } from 'vite';
+import eslint from 'vite-plugin-eslint';
+import autoExternal from 'rollup-plugin-auto-external';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -7,13 +9,20 @@ export default defineConfig({
         lib: {
             entry: path.resolve(__dirname, 'framefusion.ts'),
             name: 'framefusion.ts',
-            fileName: (format) => `framefusion.${format}.js`,
-            formats: ['es']
+            fileName: (format) => {
+                if (format === 'es') {
+                    return 'framefusion.es.js';
+                }
+                if (format === 'cjs') {
+                    return 'framefusion.cjs';
+                }
+
+                throw new Error(`Please provide a fileName for ${format}`);
+            },
+            formats: ['es', 'cjs'],
         },
         rollupOptions: {
-            // Some libraries do not work well with Rollup and should be listed here.
-            // Examples are 'gl' and 'fs'.
-            external: ['beamcoder', 'http', 'https'],
+            external: ['node:https'],
         },
         sourcemap: true,
     },
@@ -23,5 +32,5 @@ export default defineConfig({
     optimizeDeps: {
         disabled: true,
     },
-    plugins: [],
+    plugins: [autoExternal(), eslint()],
 });

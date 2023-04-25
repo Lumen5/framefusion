@@ -60,3 +60,20 @@ For a complete working project (with package.json, vite config, typescript confi
 ```bash
 npm install && npm run test-ui
 ```
+
+# Philosophy
+
+We want to limit framefusion to 2 simple roles:
+
+ 1. Extracting frames from videos
+ 2. Combining frames into a video
+
+We want to design the API to be as minimal as possible to achieve these two goals.
+
+We also want to build the library in a way that we can provide different backends to acheive these goals, but still keep a similar interface.
+
+# Where we are with the philosophy currently
+
+Only point 1 is implemented so far (Extracting frames from videos).
+
+We also only provide a beamcoder backend and we still have to figure out how we can swap backends and skip compiling beamcoder. This could be through different npm packages.

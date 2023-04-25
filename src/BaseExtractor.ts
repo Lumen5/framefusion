@@ -15,7 +15,7 @@ export class BaseExtractor implements Extractor {
         threadCount = 8,
         endTime,
         interpolateFps,
-        interpolateMode
+        interpolateMode,
     }: ExtractorArgs): Promise<void> {
         throw new Error('Not implemented');
     }
@@ -58,12 +58,12 @@ export class BaseExtractor implements Extractor {
     async readFrames({
         onFrameAvailable,
         flush = true,
-    } : {
+    }: {
         /**
          * Return true if we need to read more frames.
          */
         onFrameAvailable?: (frame: Frame) => Promise<boolean> | boolean;
-        flush?:             boolean;
+        flush?: boolean;
     } = {
         flush: true,
         onFrameAvailable: () => true,
