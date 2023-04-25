@@ -1,6 +1,6 @@
 {
   "name": "@lumen5/framefusion",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "module",
   "scripts": {
     "docs": "typedoc framefusion.ts",
@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "beamcoder": "^0.7.1",
+    "canvas": "^2.11.2",
     "fs-extra": "^11.1.1",
     "got": "^12.6.0",
     "http-server": "^14.1.1",
