@@ -191,8 +191,6 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             outputPixelFormat = 'rgb24';
         }
 
-        console.log('init', { inputFileOrUrl, outputFile, threadCount, endTime, interpolateFps, interpolateMode, outputPixelFormat });
-
         //
         //      - Demuxing -
         //
@@ -203,14 +201,10 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         let demuxer;
 
         if (inputFileOrUrl.startsWith('http')) {
-            console.log('downloading url');
             const downloadUrl = new DownloadVideoURL(inputFileOrUrl);
             await downloadUrl.download();
             inputFileOrUrl = downloadUrl.filepath;
-            console.log('finished downloading');
         }
-
-        console.log('file mode');
         demuxer = await beamcoder.demuxer('file:' + inputFileOrUrl);
 
 
