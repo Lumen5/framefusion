@@ -373,7 +373,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      *
      * @see getFrameAtTime()
      */
-    async getFrameImageDataAtTime(targetTime: number): Promise<ImageData> {
+    async getImageDataAtTime(targetTime: number): Promise<ImageData> {
         LOG_SINGLE_FRAME_DUMP_FLOW && console.log(`Requesting to dump a frame at Time(s)=${targetTime}`);
         const targetPts = Math.floor(this.timeToPts(targetTime));
         const frame = await this.getFrameAtPts(targetPts);

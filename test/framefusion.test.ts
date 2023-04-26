@@ -287,7 +287,7 @@ describe('framefusion', () => {
 
             // Act & assert
             for (let i = 0; i < 10; i++) {
-                const imagedata = await extractor.getFrameImageDataAtTime(i / 30.0 + FRAME_SYNC_DELTA);
+                const imagedata = await extractor.getImageDataAtTime(i / 30.0 + FRAME_SYNC_DELTA);
                 expect(imagedata.width).to.equal(extractor.width);
                 expect(imagedata.height).to.equal(extractor.height);
                 const canvas = createCanvas(imagedata.width, imagedata.height);

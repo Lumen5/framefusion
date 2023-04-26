@@ -1,3 +1,5 @@
+import type { ImageData } from 'canvas';
+
 import type {
     ExtractorArgs,
     Frame,
@@ -37,6 +39,10 @@ export class BaseExtractor implements Extractor {
     }
 
     async getFrameAtTime(targetTime: number): Promise<Frame> {
+        throw new Error('Not implemented');
+    }
+
+    async getImageDataAtTime(targetTime: number): Promise<ImageData> {
         throw new Error('Not implemented');
     }
 

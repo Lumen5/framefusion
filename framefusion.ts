@@ -1,3 +1,4 @@
+import type { ImageData } from 'canvas';
 import { BeamcoderExtractor } from './src/backends/beamcoder.js';
 
 export type Frame = {
@@ -34,6 +35,8 @@ export interface Extractor {
 
     getFrameAtTime(targetTime: number): Promise<Frame>;
 
+    getImageDataAtTime(targetTime: number): Promise<ImageData>;
+
     dispose(): Promise<void>;
 }
 
@@ -59,7 +62,7 @@ export interface Extractor {
 //         inputFileOrUrl: TEST_VIDEO,
 //     });
 //
-//     const frame = await extractor.getFrameImageDataAtTime(0.3);
+//     const frame = await extractor.getImageDataAtTime(0.3);
 //     console.log(frame);
 //     extractor.dispose();
 // };
