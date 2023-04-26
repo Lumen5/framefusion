@@ -206,7 +206,7 @@ describe('framefusion', () => {
             const p2 = performance.now();
             console.log('Time to dump all frames (ms): ', p2 - p1);
 
-            await new Promise(resolve => setTimeout(resolve, 10000));
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
             // Assert
             // There should be only 2 frames
