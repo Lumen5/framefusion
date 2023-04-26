@@ -164,24 +164,6 @@ describe('framefusion', () => {
             extractor.dispose();
         }, 50000);
 
-        it.concurrent('Should read a mp4 with specified pixel format', async() => {
-            // Arrange
-            const extractor = await BeamcoderExtractor.create({
-                inputFileOrUrl: TEST_VIDEO_SMALLER,
-                threadCount: 8,
-                outputPixelFormat: 'argb',
-            }) as BeamcoderExtractor;
-
-            // Act
-            const frame = await extractor.getFrameAtTime(1);
-
-            // Assert
-            expect(frame.format).to.equal('argb');
-
-            // Cleanup
-            extractor.dispose();
-        }, 50000);
-
         it('Should seek and dump frames', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
@@ -298,7 +280,6 @@ describe('framefusion', () => {
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: './test/samples/countTo60.mp4',
                 threadCount: 8,
-                outputPixelFormat: 'rgba',
             }) as BeamcoderExtractor;
 
             // Sample at the middle of each frame

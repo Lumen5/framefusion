@@ -182,15 +182,12 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         endTime,
         interpolateFps,
         interpolateMode,
-        outputPixelFormat,
     }: ExtractorArgs): Promise<void> {
         if (!inputFileOrUrl) {
             throw new Error('Can only use file OR url');
         }
         let readStream: Stream;
-        if (!outputPixelFormat) {
-            outputPixelFormat = 'rgb24';
-        }
+        let outputPixelFormat = 'rgba';
 
         console.log('init', { inputFileOrUrl, outputFile, threadCount, endTime, interpolateFps, interpolateMode, outputPixelFormat });
 
@@ -241,6 +238,10 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
                     // TODO: build a map of outputFormats to outputPixelFormats and remove this from this loop.
                     if (outputFormat === 'mjpeg') {
                         outputPixelFormat = 'yuvj422p';
+                    }
+
+                    if (outputFormat === 'png') {
+                        outputPixelFormat = 'rgb24';
                     }
                 }
             });
@@ -370,13 +371,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     /**
      * Dump one frame's image data (for canvas) at a specific time
      *
-     * This method can seek as required, but generally, it is designed to be
-     * performant in the cases where we progressively read a video frame by frame.
-     *
-     * So the implementation in here should not seek all the time, but rather
-     * read packets as they come, when possible,
-     *
-     * @see getFrameAtPts()
+     * @see getFrameAtTime()
      */
     async getFrameImageDataAtTime(targetTime: number): Promise<ImageData> {
         LOG_SINGLE_FRAME_DUMP_FLOW && console.log(`Requesting to dump a frame at Time(s)=${targetTime}`);
