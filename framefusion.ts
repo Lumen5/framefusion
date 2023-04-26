@@ -32,6 +32,8 @@ export interface Extractor {
 
     get height(): number;
 
+    getFrameAtTime(targetTime: number): Promise<Frame>;
+
     getFrameImageDataAtTime(targetTime: number): Promise<ImageData>;
 
     dispose(): Promise<void>;
