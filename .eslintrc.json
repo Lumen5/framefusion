@@ -24,7 +24,7 @@
         "global": false,
         "__VERSION__": false
     },
-    "ignorePatterns": ["*.d.ts", "dist/**"],
+    "ignorePatterns": ["*.d.ts", "dist/**", "examples/**"],
     "rules": {
         "accessor-pairs": "error",
         "arrow-spacing": ["error", { "before": true, "after": true }],
