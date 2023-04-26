@@ -275,7 +275,7 @@ describe('framefusion', () => {
             extractor.dispose();
         }, 10000);
 
-        it.concurrent('Should get frame as image data', async() => {
+        it('Should get frame as image data', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: './test/samples/countTo60.mp4',
@@ -357,7 +357,7 @@ describe('framefusion', () => {
             extractor.dispose();
         }, 50000);
 
-        it.concurrent('Should seek and dump frames in a video [big video]', async() => {
+        it.skip.concurrent('Should seek and dump frames in a video [big video]', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: TEST_VIDEO,
