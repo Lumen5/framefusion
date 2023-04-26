@@ -18,7 +18,6 @@ export type ExtractorArgs = {
     interpolateMode?: InterpolateMode;
     // ffmpeg:    https://ffmpeg.org/doxygen/trunk/pixfmt_8h.html#a9a8e335cf3be472042bc9f0cf80cd4c5
     // gstreamer: https://gstreamer.freedesktop.org/documentation/video/video-format.html?gi-language=c#GstVideoFormat
-    outputPixelFormat?: 'rgba' | 'argb' | 'rgb24' | 'yuvj422p';
 };
 
 export interface Extractor {
@@ -60,7 +59,7 @@ export interface Extractor {
 //         inputFileOrUrl: TEST_VIDEO,
 //     });
 //
-//     const frame = await extractor.getFrameAtTime(0.3);
+//     const frame = await extractor.getFrameImageDataAtTime(0.3);
 //     console.log(frame);
 //     extractor.dispose();
 // };

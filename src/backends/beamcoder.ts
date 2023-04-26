@@ -4,6 +4,8 @@ import type {
     Frame
 } from 'beamcoder';
 import beamcoder from 'beamcoder';
+import { createImageData } from 'canvas';
+import type { ImageData } from 'canvas';
 import type {
     InterpolateMode,
     Extractor,
@@ -180,15 +182,12 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         endTime,
         interpolateFps,
         interpolateMode,
-        outputPixelFormat,
     }: ExtractorArgs): Promise<void> {
         if (!inputFileOrUrl) {
             throw new Error('Can only use file OR url');
         }
         let readStream: Stream;
-        if (!outputPixelFormat) {
-            outputPixelFormat = 'rgb24';
-        }
+        let outputPixelFormat = 'rgba';
 
         console.log('init', { inputFileOrUrl, outputFile, threadCount, endTime, interpolateFps, interpolateMode, outputPixelFormat });
 
@@ -239,6 +238,10 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
                     // TODO: build a map of outputFormats to outputPixelFormats and remove this from this loop.
                     if (outputFormat === 'mjpeg') {
                         outputPixelFormat = 'yuvj422p';
+                    }
+
+                    if (outputFormat === 'png') {
+                        outputPixelFormat = 'rgb24';
                     }
                 }
             });
@@ -363,6 +366,41 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         LOG_SINGLE_FRAME_DUMP_FLOW && console.log(`Requesting to dump a frame at Time(s)=${targetTime}`);
         const targetPts = Math.floor(this.timeToPts(targetTime));
         return this.getFrameAtPts(targetPts);
+    }
+
+    /**
+     * Dump one frame's image data (for canvas) at a specific time
+     *
+     * @see getFrameAtTime()
+     */
+    async getFrameImageDataAtTime(targetTime: number): Promise<ImageData> {
+        LOG_SINGLE_FRAME_DUMP_FLOW && console.log(`Requesting to dump a frame at Time(s)=${targetTime}`);
+        const targetPts = Math.floor(this.timeToPts(targetTime));
+        const frame = await this.getFrameAtPts(targetPts);
+
+        const components = 4; // 4 components: r, g, b and a
+        const size = frame.width * frame.height * components;
+        const rawData = new Uint8ClampedArray(size);
+        const sourceLineSize = frame.linesize as unknown as number;
+        const pixels = frame.data[0] as Uint8Array;
+
+        // libav creates larger buffers because it makes their internal code simpler.
+        // we have to trim a part at the right of each pixel row.
+        for (let i = 0; i < frame.height; i++) {
+            const sourceStart = i * sourceLineSize;
+            const sourceEnd = sourceStart + frame.width * components;
+            const sourceData = pixels.slice(sourceStart, sourceEnd);
+            const targetOffset = i * frame.width * components;
+            rawData.set(sourceData, targetOffset);
+        }
+
+        const image = createImageData(
+            rawData,
+            frame.width,
+            frame.height
+        );
+
+        return image;
     }
 
     /**

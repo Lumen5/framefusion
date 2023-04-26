@@ -13,6 +13,7 @@ import {
 import sinon from 'sinon';
 import { toMatchImageSnapshot } from 'jest-image-snapshot';
 import { fileExistsSync } from 'tsconfig-paths/lib/filesystem';
+import { createCanvas } from 'canvas';
 import { BeamcoderExtractor } from '../framefusion';
 
 declare global {
@@ -163,24 +164,6 @@ describe('framefusion', () => {
             extractor.dispose();
         }, 50000);
 
-        it.concurrent('Should read a mp4 with specified pixel format', async() => {
-            // Arrange
-            const extractor = await BeamcoderExtractor.create({
-                inputFileOrUrl: TEST_VIDEO_SMALLER,
-                threadCount: 8,
-                outputPixelFormat: 'argb',
-            }) as BeamcoderExtractor;
-
-            // Act
-            const frame = await extractor.getFrameAtTime(1);
-
-            // Assert
-            expect(frame.format).to.equal('argb');
-
-            // Cleanup
-            extractor.dispose();
-        }, 50000);
-
         it('Should seek and dump frames', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
@@ -286,6 +269,31 @@ describe('framefusion', () => {
             for (let i = 0; i < 60; i++) {
                 const frame = await extractor.getFrameAtTime(i / 30.0 + FRAME_SYNC_DELTA);
                 expect(Math.floor(extractor.ptsToTime(frame.pts) * 30)).to.equal(i);
+            }
+
+            // Cleanup
+            extractor.dispose();
+        }, 10000);
+
+        it.concurrent('Should get frame as image data', async() => {
+            // Arrange
+            const extractor = await BeamcoderExtractor.create({
+                inputFileOrUrl: './test/samples/countTo60.mp4',
+                threadCount: 8,
+            }) as BeamcoderExtractor;
+
+            // Sample at the middle of each frame
+            const FRAME_SYNC_DELTA = (1 / 30.0) / 2.0;
+
+            // Act & assert
+            for (let i = 0; i < 10; i++) {
+                const imagedata = await extractor.getFrameImageDataAtTime(i / 30.0 + FRAME_SYNC_DELTA);
+                expect(imagedata.width).to.equal(extractor.width);
+                expect(imagedata.height).to.equal(extractor.height);
+                const canvas = createCanvas(imagedata.width, imagedata.height);
+                const ctx = canvas.getContext('2d');
+                ctx.putImageData(imagedata, 0, 0);
+                expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
             }
 
             // Cleanup
