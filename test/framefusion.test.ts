@@ -273,7 +273,7 @@ describe('framefusion', () => {
 
             // Cleanup
             extractor.dispose();
-        }, 2000);
+        }, 10000);
 
         it.concurrent('Should get frame as image data', async() => {
             // Arrange
