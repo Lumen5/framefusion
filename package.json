@@ -15,7 +15,8 @@
     "vite-node": "vite-node",
     "dev": " yarn run build && node dist/framefusion.es.js",
     "debug": " yarn run build && node --enable-source-maps --inspect-brk dist/framefusion.es.js",
-    "lint": "eslint ./ --ext .js,.ts"
+    "lint": "eslint ./ --ext .js,.ts",
+    "test-in-docker": "docker build -t framefusion-test-image -f ./docker-images/ci.Dockerfile . && docker run -it framefusion-test-image"
   },
   "dependencies": {
     "beamcoder": "^0.7.1",
