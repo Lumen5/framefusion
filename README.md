@@ -7,7 +7,7 @@ Framefusion is an experimental mp4 frame extraction library based on [beamcoder]
 
 ## Installation
 
-## Mac (newnew)
+## Mac
 
 First, make sure you don't have ffmpeg other than 5
 
