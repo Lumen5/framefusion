@@ -19,6 +19,8 @@ brew uninstall ffmpeg
 brew uninstall ffmpeg@6
 ```
 
+Then install:
+
 ```
 yarn install
 ```
