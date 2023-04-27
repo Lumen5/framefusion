@@ -4,9 +4,26 @@ Dump mp4 frames at specific times in node.
 
 Framefusion is an experimental mp4 frame extraction library based on [beamcoder](https://github.com/Streampunk/beamcoder).
 
-# Pre-installation setup
 
-## Env vars
+## Installation
+
+## Mac (newnew)
+
+First, make sure you don't have ffmpeg other than 5
+
+```
+brew uninstall ffmpeg
+```
+
+```
+brew uninstall ffmpeg@6
+```
+
+```
+yarn install
+```
+
+## Linux
 
 You should set a few variables whenever you are about to run `yarn install` to let beamcoder know where we'll install
 ffmpeg's libraries. This is temporary until beamcoder's install script is fixed (See beamcoder issue [103](https://github.com/Streampunk/beamcoder/issues/103)).
@@ -25,28 +42,16 @@ ENV CPATH="/tmp/framefusion-ffmpeg/ffmpeg/include/"
 RUN yarn install
 ```
 
-## Mac (new)
-
-```
-export DYLD_LIBRARY_PATH="/tmp/framefusion-ffmpeg/ffmpeg/lib/"
-export CXXFLAGS="-I/tmp/framefusion-ffmpeg/ffmpeg/include/"
-yarn install
-```
-
-## Linux
-
-TODO
-
 # Installing in a project
 
 ```bash
-yarn add git+ssh://git@github.com:Lumen5/framefusion.git
+yarn add @lumen5/framefusion
 ```
 
 # Example usage
 
 ```typescript
-import { BeamcoderExtractor } from 'framefusion';
+import { BeamcoderExtractor } from '@lumen5/framefusion';
 
 const inputFile = './video.mp4';
 
@@ -69,8 +74,11 @@ For a complete working project (with package.json, vite config, typescript confi
 
 # Running test
 
+Make sure you run node 18 or higher.
+
 ```bash
-npm install && npm run test-ui
+nvm use 18
+yarn install && yarn run test-ui
 ```
 
 # Philosophy
