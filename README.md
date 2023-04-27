@@ -29,16 +29,16 @@ You should set a few variables whenever you are about to run `yarn install` to l
 ffmpeg's libraries. This is temporary until beamcoder's install script is fixed (See beamcoder issue [103](https://github.com/Streampunk/beamcoder/issues/103)).
 
 ```
-export LIBRARY_PATH="/tmp/framefusion-ffmpeg/ffmpeg/lib/"
-export CPATH="/tmp/framefusion-ffmpeg/ffmpeg/include/"
+export CPATH="/YOUR_APP_PATH/.framefusion-ffmpeg/ffmpeg/include/"
+export PKG_CONFIG_PATH="/YOUR_APP_PATH/.framefusion-ffmpeg/ffmpeg/lib/pkgconfig/"
 yarn install
 ```
 
 In docker:
 
 ```
-ENV LIBRARY_PATH="/tmp/framefusion-ffmpeg/ffmpeg/lib/"
-ENV CPATH="/tmp/framefusion-ffmpeg/ffmpeg/include/"
+ENV CPATH="/YOUR_APP_PATH/.framefusion-ffmpeg/ffmpeg/include/"
+ENV PKG_CONFIG_PATH="/YOUR_APP_PATH/.framefusion-ffmpeg/ffmpeg/lib/pkgconfig/"
 RUN yarn install
 ```
 

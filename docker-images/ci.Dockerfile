@@ -4,7 +4,7 @@ WORKDIR /ffmpeg-temp
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get -y install wget xz-utils python3 build-essential
+RUN apt-get update && apt-get -y install wget xz-utils python3 build-essential pkg-config
 # When host is ARM (M1), the ubuntu image needs a few more dependencies
 # RUN apt-get update && apt-get -y install wget xz-utils python3 build-essential pkg-config libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
 
@@ -23,7 +23,7 @@ RUN . "$HOME/.nvm/nvm.sh"\
 ADD . /framefusion
 WORKDIR /framefusion
 
-ENV LIBRARY_PATH="/tmp/framefusion-ffmpeg/ffmpeg/lib/"
-ENV CPATH="/tmp/framefusion-ffmpeg/ffmpeg/include/"
+ENV CPATH="/framefusion/.framefusion-ffmpeg/ffmpeg/include/"
+ENV PKG_CONFIG_PATH="/framefusion/.framefusion-ffmpeg/ffmpeg/lib/pkgconfig/"
 
 ENTRYPOINT . "$HOME/.nvm/nvm.sh" && yarn install --frozen-lockfile && yarn run test run && yarn run lint

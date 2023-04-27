@@ -16,15 +16,15 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         exit 1
     fi
 
-    rm -rf /tmp/framefusion-ffmpeg
-    mkdir /tmp/framefusion-ffmpeg
-    cd /tmp/framefusion-ffmpeg
+    rm -rf ./.framefusion-ffmpeg
+    mkdir ./.framefusion-ffmpeg
+    cd ./.framefusion-ffmpeg
     wget $BINARIES_URL
     tar -xf ffmpeg.tar.xz
     rm ffmpeg.tar.xz
     mv $(ls -1) ffmpeg
 
-    ldconfig /tmp/framefusion-ffmpeg/ffmpeg/lib/
+    ldconfig $(realpath .)/ffmpeg/lib/
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     echo "Detected OS: Mac - leaving the rest to beamcoder setup"
 elif [[ "$OSTYPE" == "cygwin" ]]; then
