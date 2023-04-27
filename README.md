@@ -25,18 +25,13 @@ ENV CPATH="/tmp/framefusion-ffmpeg/ffmpeg/include/"
 RUN yarn install
 ```
 
-## Mac (M1)
+## Mac (new)
 
 ```
-brew uninstall ffmpeg
-brew install ffmpeg@5
-export CXXFLAGS="-I/opt/homebrew/Cellar/ffmpeg/5.1.2_6/include/"
-ln -s /opt/homebrew/Cellar/ffmpeg/5.1.2_6/ /opt/homebrew/Cellar/ffmpeg/5.0
+export DYLD_LIBRARY_PATH="/tmp/framefusion-ffmpeg/ffmpeg/lib/"
+export CXXFLAGS="-I/tmp/framefusion-ffmpeg/ffmpeg/include/"
+yarn install
 ```
-
-## Mac (Intel)
-
-TODO
 
 ## Linux
 
