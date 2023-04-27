@@ -357,7 +357,7 @@ describe('framefusion', () => {
             extractor.dispose();
         }, 50000);
 
-        it.skip.concurrent('Should seek and dump frames in a video [big video]', async() => {
+        it.concurrent('Should seek and dump frames in a video [big video]', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: TEST_VIDEO,
