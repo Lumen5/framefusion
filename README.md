@@ -6,6 +6,25 @@ Framefusion is an experimental mp4 frame extraction library based on [beamcoder]
 
 # Pre-installation setup
 
+## Env vars
+
+You should set a few variables whenever you are about to run `yarn install` to let beamcoder know where we'll install
+ffmpeg's libraries. This is temporary until beamcoder's install script is fixed (See beamcoder issue [103](https://github.com/Streampunk/beamcoder/issues/103)).
+
+```
+export LIBRARY_PATH="/tmp/framefusion-ffmpeg/ffmpeg/lib/"
+export CPATH="/tmp/framefusion-ffmpeg/ffmpeg/include/"
+yarn install
+```
+
+In docker:
+
+```
+ENV LIBRARY_PATH="/tmp/framefusion-ffmpeg/ffmpeg/lib/"
+ENV CPATH="/tmp/framefusion-ffmpeg/ffmpeg/include/"
+RUN yarn install
+```
+
 ## Mac (M1)
 
 ```
