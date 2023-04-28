@@ -16,8 +16,7 @@
     "dev": " yarn run build && node dist/framefusion.es.js",
     "debug": " yarn run build && node --enable-source-maps --inspect-brk dist/framefusion.es.js",
     "lint": "eslint ./ --ext .js,.ts",
-    "test-in-docker": "docker build -t framefusion-test-image -f ./docker-images/ci.Dockerfile . && docker run -it framefusion-test-image",
-    "preinstall": "./scripts/pre_install.sh"
+    "test-in-docker": "docker build -t framefusion-test-image -f ./docker-images/ci.Dockerfile . && docker run -it framefusion-test-image"
   },
   "dependencies": {
     "@antoinemopa/beamcoder": "^0.7.4",
