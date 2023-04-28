@@ -11,7 +11,7 @@ jobs:
   publish-npm:
     runs-on: ubuntu-latest
     env:
-      LIBRARY_PATH: /usr/local/lib/libav/
+      PKG_CONFIG_PATH: /usr/local/lib/libav/pkgconfig/
       CPATH: /usr/local/include/libav/
     steps:
       - uses: actions/checkout@v3
