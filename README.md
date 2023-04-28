@@ -4,35 +4,49 @@ Dump mp4 frames at specific times in node.
 
 Framefusion is an experimental mp4 frame extraction library based on [beamcoder](https://github.com/Streampunk/beamcoder).
 
-# Pre-installation setup
 
-## Mac (M1)
+## Installation
+
+## Mac
+
+First, make sure you don't have ffmpeg other than 5
 
 ```
 brew uninstall ffmpeg
-brew install ffmpeg@5
-export CXXFLAGS="-I/opt/homebrew/Cellar/ffmpeg/5.1.2_6/include/"
-ln -s /opt/homebrew/Cellar/ffmpeg/5.1.2_6/ /opt/homebrew/Cellar/ffmpeg/5.0
 ```
 
-## Mac (Intel)
+```
+brew uninstall ffmpeg@6
+```
 
-TODO
+Then `yarn install` should install any required dependencies:
+
+```
+yarn install
+```
 
 ## Linux
 
-TODO
+You need to install ffmpeg libraries before installing. You can refer to [install_beamcoder_dependencies.sh](https://github.com/Lumen5/framefusion/blob/main/scripts/install_beamcoder_dependencies.sh).
+
+When installing, provide the path to ffmpeg (Unless it's already in system path).
+
+```
+export CPATH="/PATH_TO_FFMPEG/include/"
+export PKG_CONFIG_PATH="/PATH_TO_FFMPEG/lib/pkgconfig/"
+yarn install
+```
 
 # Installing in a project
 
 ```bash
-yarn add git+ssh://git@github.com:Lumen5/framefusion.git
+yarn add @lumen5/framefusion
 ```
 
 # Example usage
 
 ```typescript
-import { BeamcoderExtractor } from 'framefusion';
+import { BeamcoderExtractor } from '@lumen5/framefusion';
 
 const inputFile = './video.mp4';
 
@@ -55,8 +69,11 @@ For a complete working project (with package.json, vite config, typescript confi
 
 # Running test
 
+Make sure you run node 18 or higher.
+
 ```bash
-npm install && npm run test-ui
+nvm use 18
+yarn install && yarn run test-ui
 ```
 
 # Philosophy

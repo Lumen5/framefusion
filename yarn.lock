@@ -2,6 +2,14 @@
 # yarn lockfile v1
 
 
+"@antoinemopa/beamcoder@^0.7.4":
+  version "0.7.4"
+  resolved "https://registry.yarnpkg.com/@antoinemopa/beamcoder/-/beamcoder-0.7.4.tgz#3096dacd01eab1fd2ab0a4fb2da8b046cc739939"
+  integrity sha512-k+thriV8Nw6fWldHtQNCx7V26KThVsHLhuHxYx/oXyOCvx6DfT5ov1B2GDhOQYGsJYqmK6DAZ+galJumPJDRWQ==
+  dependencies:
+    bindings "^1.5.0"
+    segfault-handler "^1.3.0"
+
 "@esbuild/android-arm64@0.17.17":
   version "0.17.17"
   resolved "https://registry.yarnpkg.com/@esbuild/android-arm64/-/android-arm64-0.17.17.tgz#164b054d58551f8856285f386e1a8f45d9ba3a31"
@@ -692,14 +700,6 @@ basic-auth@^2.0.1:
   integrity sha512-NF+epuEdnUYVlGuhaxbbq+dvJttwLnGY+YixlXlME5KpQ5W3CnXA5cVTneY3SPbPDRkcjMbifrwmFYcClgOZeg==
   dependencies:
     safe-buffer "5.1.2"
-
-beamcoder@^0.7.1:
-  version "0.7.1"
-  resolved "https://registry.yarnpkg.com/beamcoder/-/beamcoder-0.7.1.tgz#91068ccec9e2c9311e3dc355f21636bfda9bcb86"
-  integrity sha512-20gpjy6V+9+X3v1H5wfofzc+MbVCPXv3JE4cm9y5R28pW2LRz2LSlJptiUxZJI8ips4xBoq7oYh+1LE5HvZskQ==
-  dependencies:
-    bindings "^1.5.0"
-    segfault-handler "^1.3.0"
 
 bindings@^1.2.1, bindings@^1.5.0:
   version "1.5.0"

@@ -2,8 +2,8 @@ import type { Stream } from 'stream';
 import type { ReadStream } from 'fs';
 import type {
     Frame
-} from 'beamcoder';
-import beamcoder from 'beamcoder';
+} from '@antoinemopa/beamcoder';
+import beamcoder from '@antoinemopa/beamcoder';
 import { createImageData } from 'canvas';
 import type { ImageData } from 'canvas';
 import type {

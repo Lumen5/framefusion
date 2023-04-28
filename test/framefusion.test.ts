@@ -275,7 +275,7 @@ describe('framefusion', () => {
             extractor.dispose();
         }, 10000);
 
-        it.concurrent('Should get frame as image data', async() => {
+        it('Should get frame as image data', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: './test/samples/countTo60.mp4',
