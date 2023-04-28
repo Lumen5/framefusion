@@ -19,7 +19,7 @@ brew uninstall ffmpeg
 brew uninstall ffmpeg@6
 ```
 
-Then install:
+Then `yarn install` should install any required dependencies:
 
 ```
 yarn install
@@ -27,21 +27,14 @@ yarn install
 
 ## Linux
 
-You should set a few variables whenever you are about to run `yarn install` to let beamcoder know where we'll install
-ffmpeg's libraries. This is temporary until beamcoder's install script is fixed (See beamcoder issue [103](https://github.com/Streampunk/beamcoder/issues/103)).
+You need to install ffmpeg libraries before running installing. You can refer to [install_beamcoder_dependencies.sh](https://github.com/Lumen5/framefusion/blob/main/scripts/install_beamcoder_dependencies.sh).
+
+When installing, provide the path to ffmpeg (Unless it's already in system path).
 
 ```
-export CPATH="/YOUR_APP_PATH/.framefusion-ffmpeg/ffmpeg/include/"
-export PKG_CONFIG_PATH="/YOUR_APP_PATH/.framefusion-ffmpeg/ffmpeg/lib/pkgconfig/"
+export CPATH="/PATH_TO_FFMPEG/include/"
+export PKG_CONFIG_PATH="/PATH_TO_FFMPEG/lib/pkgconfig/"
 yarn install
-```
-
-In docker:
-
-```
-ENV CPATH="/YOUR_APP_PATH/.framefusion-ffmpeg/ffmpeg/include/"
-ENV PKG_CONFIG_PATH="/YOUR_APP_PATH/.framefusion-ffmpeg/ffmpeg/lib/pkgconfig/"
-RUN yarn install
 ```
 
 # Installing in a project
