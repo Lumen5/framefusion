@@ -11,23 +11,23 @@ jobs:
   publish-npm:
     runs-on: ubuntu-latest
     env:
-      CPATH: /framefusion/.framefusion-ffmpeg/ffmpeg/include/
-      PKG_CONFIG_PATH: /framefusion/.framefusion-ffmpeg/ffmpeg/lib/pkgconfig/
+      CPATH: /tmp/framefusion/.framefusion-ffmpeg/ffmpeg/include/
+      PKG_CONFIG_PATH: /tmp/framefusion/.framefusion-ffmpeg/ffmpeg/lib/pkgconfig/
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
           node-version: 18
           registry-url: https://registry.npmjs.org/
-      - run: mkdir /framefusion
-      - run: cp -r . /framefusion
+      - run: mkdir /tmp/framefusion
+      - run: cp -r . /tmp/framefusion
       - run: sudo ./scripts/install_beamcoder_dependencies.sh
-        working-directory: /framefusion
+        working-directory: /tmp/framefusion
       - run: yarn install --frozen-lockfile
-        working-directory: /framefusion
+        working-directory: /tmp/framefusion
       - run: yarn build
-        working-directory: /framefusion
+        working-directory: /tmp/framefusion
       - run: yarn publish
-        working-directory: /framefusion
+        working-directory: /tmp/framefusion
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
