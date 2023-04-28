@@ -20,6 +20,7 @@ jobs:
           node-version: 18
           registry-url: https://registry.npmjs.org/
       - run: mkdir /framefusion
+      - run: cp -r . /framefusion
       - run: sudo ./scripts/install_beamcoder_dependencies.sh
         working-directory: /framefusion
       - run: yarn install --frozen-lockfile
