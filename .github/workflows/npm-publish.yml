@@ -11,8 +11,8 @@ jobs:
   publish-npm:
     runs-on: ubuntu-latest
     env:
-      CPATH="/framefusion/.framefusion-ffmpeg/ffmpeg/include/"
-      PKG_CONFIG_PATH="/framefusion/.framefusion-ffmpeg/ffmpeg/lib/pkgconfig/"
+      CPATH: /framefusion/.framefusion-ffmpeg/ffmpeg/include/
+      PKG_CONFIG_PATH: /framefusion/.framefusion-ffmpeg/ffmpeg/lib/pkgconfig/
     defaults:
       run:
         working-directory: /framefusion
