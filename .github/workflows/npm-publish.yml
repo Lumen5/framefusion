@@ -11,13 +11,16 @@ jobs:
   publish-npm:
     runs-on: ubuntu-latest
     env:
-      PKG_CONFIG_PATH: /usr/local/lib/libav/pkgconfig/
-      CPATH: /usr/local/include/libav/
+      CPATH="/framefusion/.framefusion-ffmpeg/ffmpeg/include/"
+      PKG_CONFIG_PATH="/framefusion/.framefusion-ffmpeg/ffmpeg/lib/pkgconfig/"
+    defaults:
+      run:
+        working-directory: /framefusion
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: 14
+          node-version: 18
           registry-url: https://registry.npmjs.org/
       - run: sudo ./scripts/install_beamcoder_dependencies.sh
       - run: yarn install --frozen-lockfile
