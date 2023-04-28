@@ -13,18 +13,20 @@ jobs:
     env:
       CPATH: /framefusion/.framefusion-ffmpeg/ffmpeg/include/
       PKG_CONFIG_PATH: /framefusion/.framefusion-ffmpeg/ffmpeg/lib/pkgconfig/
-    defaults:
-      run:
-        working-directory: /framefusion
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
           node-version: 18
           registry-url: https://registry.npmjs.org/
+      - run: mkdir /framefusion
       - run: sudo ./scripts/install_beamcoder_dependencies.sh
+        working-directory: /framefusion
       - run: yarn install --frozen-lockfile
+        working-directory: /framefusion
       - run: yarn build
+        working-directory: /framefusion
       - run: yarn publish
+        working-directory: /framefusion
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
