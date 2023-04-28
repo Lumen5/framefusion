@@ -26,6 +26,6 @@ WORKDIR /framefusion
 ENV CPATH="/framefusion/.framefusion-ffmpeg/ffmpeg/include/"
 ENV PKG_CONFIG_PATH="/framefusion/.framefusion-ffmpeg/ffmpeg/lib/pkgconfig/"
 
-RUN ./scripts/ubuntu_ffmpeg_install.sh
+RUN ./scripts/install_beamcoder_dependencies.sh
 
 ENTRYPOINT . "$HOME/.nvm/nvm.sh" && yarn install --frozen-lockfile && yarn run test run && yarn run lint
