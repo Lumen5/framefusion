@@ -30,8 +30,50 @@ const TEST_SERVER_PORT = 4242;
 expect.extend({ toMatchImageSnapshot });
 
 const TEST_VIDEO = './test/samples/bbb10m.mp4';
+const TEST_VIDEO_WIDTH = 1920;
+const TEST_VIDEO_HEIGHT = 1080;
+
+const TEST_VIDEO_MEDIUM = './test/samples/bbb-medium.mp4';
+const TEST_VIDEO_MEDIUM_WIDTH = 720;
+const TEST_VIDEO_MEDIUM_HEIGHT = 406;
+
+const TEST_VIDEO_SMALL = './test/samples/bbb-small.mp4';
+const TEST_VIDEO_SMALL_WIDTH = 480;
+const TEST_VIDEO_SMALL_HEIGHT = 270;
+
 const TEST_VIDEO_SMALLER = './test/samples/bbb-smaller.mp4';
+const TEST_VIDEO_SMALLER_WIDTH = 384
+const TEST_VIDEO_SMALLER_HEIGHT = 216
+
+const TEST_VIDEO_COUNT_TO_60 = './test/samples/countTo60.mp4';
+const TEST_VIDEO_COUNT_TO_60_WIDTH = 24;
+const TEST_VIDEO_COUNT_TO_60_HEIGHT = 24;
+
 const TEST_VIDEO_LOW_FRAMERATE = './test/samples/bbb-low-fps.mp4';
+
+const ALL_TEST_VIDEOS = [
+    TEST_VIDEO,
+    TEST_VIDEO_MEDIUM,
+    TEST_VIDEO_SMALL,
+    TEST_VIDEO_SMALLER,
+    TEST_VIDEO_COUNT_TO_60
+]
+
+const ALL_TEST_VIDEO_WIDTHS = [
+    TEST_VIDEO_WIDTH,
+    TEST_VIDEO_MEDIUM_WIDTH,
+    TEST_VIDEO_SMALL_WIDTH,
+    TEST_VIDEO_SMALLER_WIDTH,
+    TEST_VIDEO_COUNT_TO_60_WIDTH
+]
+
+const ALL_TEST_VIDEO_HEIGHTS = [
+    TEST_VIDEO_HEIGHT,
+    TEST_VIDEO_MEDIUM_HEIGHT,
+    TEST_VIDEO_SMALL_HEIGHT,
+    TEST_VIDEO_SMALLER_HEIGHT,
+    TEST_VIDEO_COUNT_TO_60_HEIGHT
+]
 
 // TODOS
 // There are a few sleeps (timeouts) to probably remove
@@ -63,7 +105,7 @@ describe('framefusion', () => {
         server.close();
     });
 
-    it('Should get duration', async() => {
+    it('should get duration', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
             inputFileOrUrl: TEST_VIDEO,
@@ -80,39 +122,63 @@ describe('framefusion', () => {
         extractor.dispose();
     });
 
-    it('should get width', async() => {
-        // Arrange
-        const extractor = await BeamcoderExtractor.create({
-            inputFileOrUrl: TEST_VIDEO,
-            outputFile: './output/frame-%04d.png',
-        });
+    it('should get source width', async () => {
+        for (let i = 0; i < ALL_TEST_VIDEOS.length; i++) {
+            // Arrange
+            const extractor = await BeamcoderExtractor.create({
+                inputFileOrUrl: ALL_TEST_VIDEOS[i],
+                outputFile: './output/frame-%04d.png'
+            });
 
-        // Act
-        const width = extractor.width;
+            // Act
+            const width = extractor.width;
 
-        // Assert
-        expect(width).to.eq(1920);
+            // Assert
+            expect(width).to.eq(ALL_TEST_VIDEO_WIDTHS[i]);
 
-        // Cleanup
-        extractor.dispose();
+            // Cleanup
+            extractor.dispose();
+        }
     });
 
-    it('Should get height', async() => {
-        // Arrange
-        const extractor = await BeamcoderExtractor.create({
-            inputFileOrUrl: TEST_VIDEO,
-            outputFile: './output/frame-%04d.png',
-        });
+    it('should get source height', async () => {
+        for (let i = 0; i < ALL_TEST_VIDEOS.length; i++) {
+            // Arrange
+            const extractor = await BeamcoderExtractor.create({
+                inputFileOrUrl: ALL_TEST_VIDEOS[i],
+                outputFile: './output/frame-%04d.png'
+            });
 
-        // Act
-        const height = extractor.height;
+            // Act
+            const height = extractor.height;
 
-        // Assert
-        expect(height).to.eq(1080);
+            // Assert
+            expect(height).to.eq(ALL_TEST_VIDEO_HEIGHTS[i]);
 
-        // Cleanup
-        extractor.dispose();
+            // Cleanup
+            extractor.dispose();
+        }
     });
+
+    it('should get frame dimensions', async() => {
+        for (let i = 0; i < ALL_TEST_VIDEOS.length; i++) {
+            // Arrange
+            const extractor = await BeamcoderExtractor.create({
+                inputFileOrUrl: ALL_TEST_VIDEOS[i],
+                outputFile: './output/frame-%04d.png'
+            });
+
+            // Act
+            const frame = await extractor.getFrameAtTime(0);
+
+            // Assert
+            expect(frame.width).to.eq(ALL_TEST_VIDEO_WIDTHS[i]);
+            expect(frame.height).to.eq(ALL_TEST_VIDEO_HEIGHTS[i]);
+
+            // Cleanup
+            extractor.dispose();
+        }
+    })
 
     describe('Continuous dumping', () => {
         it('Should dump an entire mp4 [smaller video version]', async() => {
@@ -444,7 +510,6 @@ describe('framefusion', () => {
         // Cleanup
         extractor.dispose();
     }, 200000);
-
 
     it('Should open a file from the network and dump all frames  [smaller video version]', async() => {
         // Arrange
