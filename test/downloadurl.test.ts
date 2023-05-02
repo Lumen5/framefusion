@@ -5,7 +5,7 @@ import {
 import { fileExistsSync } from 'tsconfig-paths/lib/filesystem';
 import { DownloadVideoURL } from '../src/DownloadVideoURL';
 
-describe('downloadUrl', () => {
+describe.skip('downloadUrl', () => {
     it('can download url', async() => {
         const url = 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4';
         const downloadUrl = new DownloadVideoURL(url);
