@@ -19,25 +19,19 @@ declare global {
 expect.extend({ toMatchImageSnapshot });
 
 describe('simple', () => {
-    it.only('can get frame', async() => {
-        console.log('-------------------------------');
+    it('can get frame', async() => {
         const extractor = await SimpleExtractor.create({
             inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4',
         });
-        console.log(extractor.width, extractor.height, extractor.duration);
-
         const FRAME_SYNC_DELTA = (1 / 30.0) / 2.0;
 
         // Act & assert
         for (let i = 0; i < 60; i++) {
             const time = i / 30.0 + FRAME_SYNC_DELTA;
-            console.log('-----------------------------');
-            console.log('time', time);
             const imageData = await extractor.getImageDataAtTime(time);
             if (!imageData) {
                 continue;
             }
-
             const canvas = createCanvas(imageData.width, imageData.height);
             const ctx = canvas.getContext('2d');
             ctx.putImageData(imageData, 0, 0);
