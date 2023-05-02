@@ -26,6 +26,9 @@ describe('simple', () => {
         const FRAME_SYNC_DELTA = (1 / 30.0) / 2.0;
 
         // Act & assert
+        // this tests a few tricky situations:
+        // 1. ensures we render the 2nd frame properly - if we read the next packet we'll draw 3 instead of 2
+        // 2. ensures we render the last few frames properly - we have to flush the decoder to get the last few frames
         for (let i = 0; i < 60; i++) {
             const time = i / 30.0 + FRAME_SYNC_DELTA;
             const imageData = await extractor.getImageDataAtTime(time);

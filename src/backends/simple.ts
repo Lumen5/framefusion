@@ -69,15 +69,20 @@ const getFilter = async({
     });
 };
 
+/**
+ * A simple extractor that uses beamcoder to extract frames from a video file.
+ */
 export class SimpleExtractor extends BaseExtractor implements Extractor {
     /**
      * The demuxer reads the file and outputs packet streams
      */
     demuxer: Demuxer = null;
+
     /**
      * The decoder reads packets and can output raw frame data
      */
     decoder: Decoder = null;
+
     /**
      * Packets can be filtered to change colorspace, fps and add various effects. If there are no color space changes or
      * filters, filter might not be necessary.
@@ -90,10 +95,19 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
      * 2. so we can return frames close the end of the stream. When such a frame is requested we have to flush (destroy)
      * the encoder to get the last few frames. This avoids having to re-create an encoder.
      */
-    filteredFrames: DecodedFrames = [];
+    filteredFrames: undefined[] | DecodedFrames = [];
 
+    /**
+     * This contains the last raw frames we read from the demuxer. We use it as a starting point for each new query. We
+     * do this ensure we don't skip any frames.
+     */
     frames = [];
-    packet = null;
+
+    /**
+     * This contains the last packet we read from the demuxer. We use it as a starting point for each new query. We do
+     * this ensure we don't skip any frames.
+     */
+    packet: Packet = null;
 
     static async create(args: ExtractorArgs): Promise<Extractor> {
         const extractor = new SimpleExtractor();
@@ -153,6 +167,10 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
         return this.demuxer.streams[0].codecpar.height;
     }
 
+    /**
+     * Get the image data for a given time in seconds
+     * @param targetTime
+     */
     async getImageDataAtTime(targetTime: number): Promise<ImageData> {
         const targetPts = Math.floor(this._timeToPTS(targetTime));
         console.log('targetTime', targetTime, '-> targetPts', targetPts);
@@ -174,7 +192,6 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
         const time_base = this.demuxer.streams[0].time_base;
         return time * time_base[1] / time_base[0];
     }
-
 
     async _getFrameAtPts(targetTime, targetPTS: number) {
         console.log('_getFrameAtPts', targetTime, targetPTS, '-> duration', this.duration);
