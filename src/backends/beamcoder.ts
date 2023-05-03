@@ -18,15 +18,13 @@ import { DownloadVideoURL } from '../DownloadVideoURL.js';
 
 const LOG_PACKET_FLOW = false;
 const LOG_SINGLE_FRAME_DUMP_FLOW = false;
+const STREAM_TYPE_VIDEO = 'video';
 
 /**
  * Assumptions made by this library:
  *
  *  - The input is always a mp4
  *    It would be nice to support other formats. One thing to change is the iformat, hardcoded for mp4.
- *
- *  - Stream 0 is the video stream we want to extract.
- *    It would be good to detect cases where stream 0 is an audio stream an switch to the next stream.
  *
  */
 export const probeCodecPar = codecpar => ({
@@ -163,6 +161,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     filteredFrames: beamcoder.Frame[] = [];
     #streamStopped = false;
     #flushed = false;
+    #streamIndex = -1;
 
     /**
      * Encoder/Decoder constuction is async, so it can't be put in a regular constructor.
@@ -210,8 +209,12 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         console.log('file mode');
         const demuxer = await beamcoder.demuxer('file:' + inputFileOrUrl);
 
-
-        console.log({ time_base: demuxer.streams[0].time_base });
+        // Find out which is the first video stream
+        this.#streamIndex = demuxer.streams.findIndex(stream => stream.codecpar.codec_type === STREAM_TYPE_VIDEO);
+        if (this.#streamIndex === -1) {
+            throw new Error('File has no video stream!');
+        }
+        console.log({ time_base: demuxer.streams[this.#streamIndex].time_base, stream: this.#streamIndex });
 
         //
         //      - Decoding -
@@ -221,10 +224,10 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
 
         const decoder = beamcoder.decoder({
             demuxer: demuxer,
-            width: demuxer.streams[0].codecpar.width,
-            height: demuxer.streams[0].codecpar.height,
-            stream_index: 0,
-            pix_fmt: demuxer.streams[0].codecpar.format,
+            width: demuxer.streams[this.#streamIndex].codecpar.width,
+            height: demuxer.streams[this.#streamIndex].codecpar.height,
+            stream_index: this.#streamIndex,
+            pix_fmt: demuxer.streams[this.#streamIndex].codecpar.format,
             thread_count: threadCount,
         });
 
@@ -259,7 +262,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         //
 
         const filterer = await getFilter({
-            stream: demuxer.streams[0],
+            stream: demuxer.streams[this.#streamIndex],
             outputPixelFormat,
             interpolateFps,
             interpolateMode,
@@ -290,6 +293,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
                 thread_count: threadCount,
                 filename: outputFile,
                 sourceDemuxer: demuxer,
+                streamIndex: this.#streamIndex,
             });
 
             this.muxer = muxer;
@@ -304,7 +308,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     }
 
     get duration(): number {
-        const time_base = this.demuxer.streams[0].time_base;
+        const time_base = this.demuxer.streams[this.#streamIndex].time_base;
         const durations = this.demuxer.streams.map(
             stream => stream.duration * time_base[0] / time_base[1]
         );
@@ -313,11 +317,11 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     }
 
     get width(): number {
-        return this.demuxer.streams[0].codecpar.width;
+        return this.demuxer.streams[this.#streamIndex].codecpar.width;
     }
 
     get height(): number {
-        return this.demuxer.streams[0].codecpar.height;
+        return this.demuxer.streams[this.#streamIndex].codecpar.height;
     }
 
     /**
@@ -336,9 +340,9 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         this.lastFrame = null;
         this.#targetPts = targetPts;
         console.log(`Seeking to PTS=${targetPts}`);
-        await this.#skipToStream0PacketIfNotAlreadyStream0();
-        await this.demuxer.seek({ stream_index: 0, timestamp: targetPts });
-        await this.#skipToStream0PacketIfNotAlreadyStream0();
+        await this.#goToCurrentStream();
+        await this.demuxer.seek({ stream_index: this.#streamIndex, timestamp: targetPts });
+        await this.#goToCurrentStream();
 
         // When seeking to the past:
         // Skip any packets which were read before.
@@ -520,7 +524,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      * Convert a time (in seconds) to PTS (based on timebase)
      */
     timeToPts(time: number) {
-        const time_base = this.demuxer.streams[0].time_base;
+        const time_base = this.demuxer.streams[this.#streamIndex].time_base;
         return time * time_base[1] / time_base[0];
     }
 
@@ -528,7 +532,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      * Convert a PTS (based on timebase) to PTS (in seconds)
      */
     ptsToTime(pts: number) {
-        const time_base = this.demuxer.streams[0].time_base;
+        const time_base = this.demuxer.streams[this.#streamIndex].time_base;
         return pts * time_base[0] / time_base[1];
     }
 
@@ -556,7 +560,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             throw new Error('Stream is over!');
         }
         this.packet = await this.#readPacketWrapped();
-        while (this.packet && this.packet.stream_index !== 0) {
+        while (this.packet && this.packet.stream_index !== this.#streamIndex) {
             this.packet = await this.#readPacketWrapped();
             if (this.packet === null) {
                 return;
@@ -564,8 +568,8 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         }
     }
 
-    async #skipToStream0PacketIfNotAlreadyStream0() {
-        while (!this.packet || this.packet.stream_index !== 0) {
+    async #goToCurrentStream() {
+        while (!this.packet || this.packet.stream_index !== this.#streamIndex) {
             await this.#nextPacket();
         }
     }
@@ -826,10 +830,12 @@ const createFrameDumpingMuxer = async({
     filename,
     sourceDemuxer,
     thread_count,
+    streamIndex,
 }: {
     filename: string;
     sourceDemuxer: beamcoder.Demuxer;
     thread_count: number;
+    streamIndex: number;
 }) => {
     const demuxers = beamcoder.demuxers();
     // The iformat is necessary to have a working probe when using a stream
@@ -842,7 +848,7 @@ const createFrameDumpingMuxer = async({
         iformat,
     });
 
-    muxer.newStream(sourceDemuxer.streams[0]);
+    muxer.newStream(sourceDemuxer.streams[streamIndex]);
     await muxer.writeHeader();
     return muxer;
 };
