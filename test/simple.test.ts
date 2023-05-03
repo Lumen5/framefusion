@@ -63,6 +63,8 @@ describe('simple', () => {
     });
 
     it('can get the last 10 frames', async() => {
+        // This test is pretty slow because our countTo60 video only has 1 I-frame. We have to run through all packets
+        // to get the last ones.
         const extractor = await SimpleExtractor.create({
             inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4',
         });
