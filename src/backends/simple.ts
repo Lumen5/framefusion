@@ -12,7 +12,24 @@ import { BaseExtractor } from '../BaseExtractor';
 import type { Extractor, ExtractorArgs, InterpolateMode } from '../../framefusion';
 import { DownloadVideoURL } from '../DownloadVideoURL';
 
-const getFilter = async({
+const createDecoder = ({
+    demuxer,
+    threadCount,
+}: {
+    demuxer: Demuxer;
+    threadCount: number;
+}): Decoder => {
+    return beamcoder.decoder({
+        demuxer: demuxer,
+        width: demuxer.streams[0].codecpar.width,
+        height: demuxer.streams[0].codecpar.height,
+        stream_index: 0, // we initialize the decoder with the first video stream but we still need to specify it further down the line?
+        pix_fmt: demuxer.streams[0].codecpar.format,
+        thread_count: threadCount,
+    });
+};
+
+const createFilter = async({
     stream,
     outputPixelFormat,
     interpolateFps,
@@ -117,6 +134,11 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
      */
     previousTargetPTS: null | number = null;
 
+    /**
+     * The number of threads to use for decoding
+     */
+    threadCount = 8;
+
     static async create(args: ExtractorArgs): Promise<Extractor> {
         const extractor = new SimpleExtractor();
         await extractor.init(args);
@@ -127,6 +149,7 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
         inputFileOrUrl,
         threadCount = 8,
     }: ExtractorArgs): Promise<void> {
+        this.threadCount = threadCount;
         if (inputFileOrUrl.startsWith('http')) {
             console.log('downloading url');
             const downloadUrl = new DownloadVideoURL(inputFileOrUrl);
@@ -135,17 +158,13 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
             console.log('finished downloading');
         }
         this.demuxer = await beamcoder.demuxer('file:' + inputFileOrUrl);
-        this.decoder = beamcoder.decoder({
-            demuxer: this.demuxer,
-            width: this.demuxer.streams[0].codecpar.width,
-            height: this.demuxer.streams[0].codecpar.height,
-            stream_index: 0, // we initialize the decoder with the first video stream but we still need to specify it further down the line?
-            pix_fmt: this.demuxer.streams[0].codecpar.format,
-            thread_count: threadCount,
-        });
-        this.filterer = await getFilter({
+        this.filterer = await createFilter({
             stream: this.demuxer.streams[0],
             outputPixelFormat: 'rgba',
+        });
+        this.decoder = createDecoder({
+            demuxer: this.demuxer as Demuxer,
+            threadCount: this.threadCount,
         });
     }
 

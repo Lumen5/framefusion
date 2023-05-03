@@ -12,7 +12,7 @@ describe('downloadUrl', () => {
         await downloadUrl.download();
 
         expect(fileExistsSync(downloadUrl.filepath)).to.be.true;
-    });
+    }, 10000);
 
     it('deletes file when cleared', async() => {
         const url = 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4';
@@ -22,5 +22,5 @@ describe('downloadUrl', () => {
 
         downloadUrl.clear();
         expect(fileExistsSync(filepath)).to.be.false;
-    });
+    }, 10000);
 });
