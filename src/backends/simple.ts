@@ -162,6 +162,13 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
             stream: this.demuxer.streams[0],
             outputPixelFormat: 'rgba',
         });
+    }
+
+    _createDecoder() {
+        if (this.decoder) {
+            this.decoder.flush();
+            this.decoder = null;
+        }
         this.decoder = createDecoder({
             demuxer: this.demuxer as Demuxer,
             threadCount: this.threadCount,
@@ -224,42 +231,15 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
         console.log('_getFrameAtPts', targetPTS, '-> duration', this.duration);
         let packetReadCount = 0;
 
-        if (!this.previousTargetPTS) {
-            // this is the first time we're calling method, get the iframe closest to the targetPTS to reduce the number
-            // of packet reads
-            console.log(`seeking forwards to ${targetPTS}`);
+        if (!this.previousTargetPTS || this.previousTargetPTS < targetPTS) {
             await this.demuxer.seek({
                 stream_index: 0, // even though we specify the stream index, it still seeks all streams
                 timestamp: targetPTS,
                 any: false,
             });
+            this._createDecoder();
             this.packet = null;
             this.frames = [];
-        }
-        else if (this.previousTargetPTS > targetPTS) {
-            // we're looking backwards
-            console.log(`seeking backwards to ${targetPTS}`);
-            await this.demuxer.seek({
-                stream_index: 0, // even though we specify the stream index, it still seeks all streams
-                timestamp: targetPTS,
-                any: false,
-                backward: true,
-            });
-            this.decoder.flush();
-            this.decoder = null;
-            this.decoder = beamcoder.decoder({
-                demuxer: this.demuxer,
-                width: this.demuxer.streams[0].codecpar.width,
-                height: this.demuxer.streams[0].codecpar.height,
-                stream_index: 0, // we initialize the decoder with the first video stream but we still need to specify it further down the line?
-                pix_fmt: this.demuxer.streams[0].codecpar.format,
-                thread_count: 8,
-            });
-            this.packet = null;
-            this.frames = [];
-        }
-        else {
-            // we're looking forward
         }
 
         // the decoder has been previously flushed while retrieving frames at the end of the stream and has thus been
