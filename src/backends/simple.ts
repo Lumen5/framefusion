@@ -224,11 +224,19 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
         return image;
     }
 
+    /**
+     * Get the presentation timestamp (PTS) for a given time in seconds
+     * @param time
+     */
     _timeToPTS(time: number) {
         const time_base = this.demuxer.streams[0].time_base;
         return time * time_base[1] / time_base[0];
     }
 
+    /**
+     * Get the frame at the given presentation timestamp (PTS)
+     * @param targetPTS
+     */
     async _getFrameAtPts(targetPTS: number) {
         LOG && console.log('_getFrameAtPts', targetPTS, '-> duration', this.duration);
         let packetReadCount = 0;
@@ -311,11 +319,13 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
                     break;
                 }
             }
-
             // get the next packet and frames
             ({ packet: this.packet, frames: this.frames } = await this._getNextPacketAndDecodeFrames());
 
             // keep track of how many packets we've read
+            if (packetReadCount >= MAX_PACKET_READS) {
+                throw Error('Reached max packet reads');
+            }
             packetReadCount++;
         }
 
