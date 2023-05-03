@@ -161,6 +161,10 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     filteredFrames: beamcoder.Frame[] = [];
     #streamStopped = false;
     #flushed = false;
+    /**
+     * mp4 files can contain multiple streams of different type (audio, video, text, etc.). 
+     * It could be that stream 0 is not a video stream and we will work with the first video stream in the file.
+     */
     #streamIndex = -1;
 
     /**
