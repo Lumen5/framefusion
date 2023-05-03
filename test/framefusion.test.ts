@@ -114,18 +114,6 @@ describe('framefusion', () => {
         extractor.dispose();
     });
 
-    it('Should get frame', async() => {
-        const extractor = await BeamcoderExtractor.create({
-            inputFileOrUrl: 'https://storage.googleapis.com/lumen5-user-5f704ed0-dbe0-4e36-be90-dc70622005f4/IMG7567MOV1a7Z14E75XrOmov-sIRp3/render.mp4',
-        });
-        const frame0 = await extractor.getFrameAtTime(20);
-        console.log('|-> frame', !!frame0, frame0?.pts);
-        //
-        // console.log('-------------------------------------');
-        // const frame1 = await extractor.getFrameAtTime(15);
-        // console.log('|-> frame', !!frame1, frame1?.pts);
-    }, 10000);
-
     describe('Continuous dumping', () => {
         it('Should dump an entire mp4 [smaller video version]', async() => {
             // Arrange
@@ -298,7 +286,7 @@ describe('framefusion', () => {
             const FRAME_SYNC_DELTA = (1 / 30.0) / 2.0;
 
             // Act & assert
-            for (let i = 59; i < 60; i++) {
+            for (let i = 0; i < 10; i++) {
                 const imagedata = await extractor.getImageDataAtTime(i / 30.0 + FRAME_SYNC_DELTA);
                 expect(imagedata.width).to.equal(extractor.width);
                 expect(imagedata.height).to.equal(extractor.height);
