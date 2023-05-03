@@ -18,8 +18,30 @@ declare global {
 
 expect.extend({ toMatchImageSnapshot });
 
-describe('simple', () => {
+describe.only('simple', () => {
+    it('can get dimensions', async() => {
+        // Arrange
+        const extractor = await SimpleExtractor.create({
+            inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4',
+        });
+
+        // Act and Assert
+        expect(extractor.width).to.equal(24);
+        expect(extractor.height).to.equal(24);
+    });
+
+    it('can get duration', async() => {
+        // Arrange
+        const extractor = await SimpleExtractor.create({
+            inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4',
+        });
+
+        // Act and Assert
+        expect(extractor.duration).to.equal(2);
+    });
+
     it('can get frames at random times', async() => {
+        // Arrange
         const extractor = await SimpleExtractor.create({
             inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4',
         });
@@ -29,6 +51,8 @@ describe('simple', () => {
             1.5, // forward to 45
             0.5, // backward to 15
         ];
+
+        // Act and Assert
         for (let i = 0; i < times_to_get.length; i++) {
             const imageData = await extractor.getImageDataAtTime(times_to_get[i]);
             if (!imageData) {
@@ -42,6 +66,7 @@ describe('simple', () => {
     });
 
     it('can get the first 10 frames', async() => {
+        // Arrange
         const extractor = await SimpleExtractor.create({
             inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4',
         });
@@ -63,6 +88,7 @@ describe('simple', () => {
     });
 
     it('can get the last 10 frames', async() => {
+        // Arrange
         // This test is pretty slow because our countTo60 video only has 1 I-frame. We have to run through all packets
         // to get the last ones.
         const extractor = await SimpleExtractor.create({
