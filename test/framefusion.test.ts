@@ -275,6 +275,26 @@ describe('framefusion', () => {
             extractor.dispose();
         }, 10000);
 
+        it.concurrent('Should seek and dump all frames in the video where the stream index is 1', async() => {
+            // Arrange
+            const extractor = await BeamcoderExtractor.create({
+                inputFileOrUrl: './test/samples/audio-is-stream0-video-is-stream1.mp4',
+                threadCount: 8,
+            }) as BeamcoderExtractor;
+
+            // Sample at the middle of each frame
+            const FRAME_SYNC_DELTA = (1 / 30.0) / 2.0;
+
+            // Act & assert
+            for (let i = 0; i < 60; i++) {
+                const frame = await extractor.getFrameAtTime(i / 30.0 + FRAME_SYNC_DELTA);
+                expect(Math.floor(extractor.ptsToTime(frame.pts) * 30)).to.equal(i);
+            }
+
+            // Cleanup
+            extractor.dispose();
+        }, 10000);
+
         it('Should get frame as image data', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
