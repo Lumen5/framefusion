@@ -487,7 +487,32 @@ describe('framefusion', () => {
         extractor.dispose();
     }, 50000);
 
-    it.skip('Encode frames to mp4', async() => {
-        expect(false).to.be.true;
-    });
+    // we want to skip this test in CI because it's slow
+    // PERFORMANCE TEST - took 172.34ms or 5.75ms per frame
+    it.skip('FF: playback HD video', async() => {
+        const FPS = 30.0;
+        const FRAME_SYNC_DELTA = (1 / FPS) / 2.0;
+
+        let duration = 0;
+        const samples = 250;
+        for (let i = 0; i < samples; i++) {
+            // Arrange
+            // here we make small currentTime increments, mimicking playback
+            const extractor = await BeamcoderExtractor.create({
+                inputFileOrUrl: TEST_VIDEO,
+            });
+
+            // Act & assert
+            const start = Date.now();
+            for (let i = 0; i < 30; i++) {
+                const time = i / FPS + FRAME_SYNC_DELTA;
+                await extractor.getFrameAtTime(time);
+            }
+            const end = Date.now();
+            duration += end - start;
+        }
+        const total_duration = duration / samples;
+        const duration_per_frame = total_duration / FPS;
+        console.log(`took ${total_duration}ms or ${duration_per_frame}ms per frame`);
+    }, 100000);
 });
