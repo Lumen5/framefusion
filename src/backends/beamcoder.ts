@@ -407,10 +407,8 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         VERBOSE && console.log('_getNextVideoStreamPacket');
 
         let packet = await this.#demuxer.read();
-        // VERBOSE && console.log('packet pts', packet.pts, 'stream_index', packet.stream_index);
         while (packet && packet.stream_index !== this.#streamIndex) {
             packet = await this.#demuxer.read();
-            // VERBOSE && console.log('packet pts', packet.pts, 'stream_index', packet.stream_index);
             if (packet === null) {
                 VERBOSE && console.log('no more packets');
                 return null;
