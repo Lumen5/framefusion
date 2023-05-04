@@ -332,15 +332,8 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
                 LOG && console.log('filteredFrames', filteredFrames.length, 'filteredFrames.pts:', filteredFrames.map(f => f.pts), '-> target.pts:', targetPTS);
                 this.filteredFrames = filteredFrames as beamcoder.DecodedFrames;
 
-                // get the closest frame
-                // let closestFrame;
-                // if (filteredFrames.length === 1) {
-                //     closestFrame = filteredFrames[0];
-                // }
-                // else {
+                // get closest frame
                 const closestFrame = filteredFrames.reverse().find(f => f.pts <= targetPTS);
-                // }
-
                 closestFramePTS = closestFrame?.pts;
                 LOG && console.log('closestFramePTS', closestFramePTS, 'targetPTS', targetPTS);
                 if (!outputFrame || closestFramePTS < targetPTS) {
