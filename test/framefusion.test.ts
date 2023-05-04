@@ -24,6 +24,7 @@ expect.extend({ toMatchImageSnapshot });
 const FPS = 30.0;
 const TEST_SERVER_PORT = 4242;
 const TEST_VIDEO = './test/samples/bbb10m.mp4';
+const TEST_VIDEO_LOW_FRAMERATE = './test/samples/bbb-low-fps.mp4';
 const FRAME_SYNC_DELTA = (1 / FPS) / 2.0;
 
 describe('FrameFusion', () => {
@@ -83,6 +84,38 @@ describe('FrameFusion', () => {
         for (let i = 0; i < 10; i++) {
             const frame = await extractor.getFrameAtTime(i / FPS + FRAME_SYNC_DELTA);
             expect(Math.floor(extractor.ptsToTime(frame.pts) * FPS)).to.equal(i);
+        }
+
+        // Cleanup
+        await extractor.dispose();
+    });
+
+    it('can get all frames', async() => {
+        // Arrange
+        const extractor = await BeamcoderExtractor.create({
+            inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4',
+        });
+
+        // Act & assert
+        for (let i = 0; i < 60; i++) {
+            const frame = await extractor.getFrameAtTime(i / FPS + FRAME_SYNC_DELTA);
+            expect(Math.floor(extractor.ptsToTime(frame.pts) * FPS)).to.equal(i);
+        }
+
+        // Cleanup
+        await extractor.dispose();
+    });
+
+    it('can get all frames (low framerate)', async() => {
+        // Arrange
+        const extractor = await BeamcoderExtractor.create({
+            inputFileOrUrl: TEST_VIDEO_LOW_FRAMERATE,
+        });
+
+        // Act & assert
+        for (let i = 0; i < 5; i++) {
+            const frame = await extractor.getFrameAtTime(i / FPS + FRAME_SYNC_DELTA);
+            expect(Math.floor(extractor.ptsToTime(frame.pts) * 30)).to.be.closeTo(i, 15);
         }
 
         // Cleanup

@@ -329,12 +329,16 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
                 const filteredResult = await this.#filterer.filter([{ name: 'in0:v', frames: this.#frames }]);
                 filteredFrames = filteredResult.flatMap(r => r.frames);
                 VERBOSE && console.log('filteredFrames', filteredFrames.length, 'filteredFrames.pts:', filteredFrames.map(f => f.pts), '-> target.pts:', targetPTS);
-                this.#filteredFrames = filteredFrames as beamcoder.DecodedFrames;
 
                 // get the closest frame to our target presentation timestamp (PTS)
                 // Beamcoder returns decoded packet frames as follows: [1000, 2000, 3000, 4000]
                 // If we're looking for a frame at 2500, we want to return the frame at 2000
                 const closestFrame = filteredFrames.reverse().find(f => f.pts <= targetPTS);
+                if (!closestFrame) {
+                    return outputFrame;
+                }
+                this.#filteredFrames = filteredFrames as beamcoder.DecodedFrames;
+
                 closestFramePTS = closestFrame?.pts;
                 VERBOSE && console.log('closestFramePTS', closestFramePTS, 'targetPTS', targetPTS);
                 if (!outputFrame || closestFramePTS < targetPTS) {
