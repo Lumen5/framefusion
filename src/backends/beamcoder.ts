@@ -93,6 +93,7 @@ const createFilter = async({
 };
 
 const STREAM_TYPE_VIDEO = 'video';
+const COLORSPACE_RGBA = 'rgba';
 
 /**
  * A simple extractor that uses beamcoder to extract frames from a video file.
@@ -180,7 +181,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         }
         this.#filterer = await createFilter({
             stream: this.#demuxer.streams[this.#streamIndex],
-            outputPixelFormat: 'rgba',
+            outputPixelFormat: COLORSPACE_RGBA,
         });
     }
 
