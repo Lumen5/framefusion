@@ -16,17 +16,19 @@ const LOG = false;
 
 const createDecoder = ({
     demuxer,
+    streamIndex,
     threadCount,
 }: {
     demuxer: Demuxer;
+    streamIndex: number;
     threadCount: number;
 }): Decoder => {
     return beamcoder.decoder({
         demuxer: demuxer,
-        width: demuxer.streams[0].codecpar.width,
-        height: demuxer.streams[0].codecpar.height,
-        stream_index: 0, // we initialize the decoder with the first video stream but we still need to specify it further down the line?
-        pix_fmt: demuxer.streams[0].codecpar.format,
+        width: demuxer.streams[streamIndex].codecpar.width,
+        height: demuxer.streams[streamIndex].codecpar.height,
+        stream_index: streamIndex,
+        pix_fmt: demuxer.streams[streamIndex].codecpar.format,
         thread_count: threadCount,
     });
 };
@@ -89,6 +91,7 @@ const createFilter = async({
 };
 
 const MAX_PACKET_READS = 1000;
+const STREAM_TYPE_VIDEO = 'video';
 
 /**
  * A simple extractor that uses beamcoder to extract frames from a video file.
@@ -141,6 +144,12 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
      */
     threadCount = 8;
 
+    /**
+     * The index of the video stream in the demuxer
+     * @param args
+     */
+    streamIndex = 0;
+
     static async create(args: ExtractorArgs): Promise<Extractor> {
         const extractor = new SimpleExtractor();
         await extractor.init(args);
@@ -153,15 +162,23 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
     }: ExtractorArgs): Promise<void> {
         this.threadCount = threadCount;
         if (inputFileOrUrl.startsWith('http')) {
-            LOG && console.log('downloading url');
+            LOG && console.log('downloading url', inputFileOrUrl);
             const downloadUrl = new DownloadVideoURL(inputFileOrUrl);
             await downloadUrl.download();
             inputFileOrUrl = downloadUrl.filepath;
             LOG && console.log('finished downloading');
         }
+        LOG && console.log('loading', inputFileOrUrl);
         this.demuxer = await beamcoder.demuxer('file:' + inputFileOrUrl);
+        LOG && console.log('streams', this.demuxer.streams.map(stream => stream.codecpar.codec_type));
+        this.streamIndex = this.demuxer.streams.findIndex(stream => stream.codecpar.codec_type === STREAM_TYPE_VIDEO);
+        LOG && console.log('streamIndex', this.streamIndex);
+        if (this.streamIndex === -1) {
+            throw new Error(`File has no ${STREAM_TYPE_VIDEO} stream!`);
+        }
+        LOG && console.log('stream type', this.demuxer.streams[this.streamIndex].codecpar.codec_type);
         this.filterer = await createFilter({
-            stream: this.demuxer.streams[0],
+            stream: this.demuxer.streams[this.streamIndex],
             outputPixelFormat: 'rgba',
         });
     }
@@ -173,6 +190,7 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
         }
         this.decoder = createDecoder({
             demuxer: this.demuxer as Demuxer,
+            streamIndex: this.streamIndex,
             threadCount: this.threadCount,
         });
     }
@@ -181,7 +199,7 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
      * Duration in seconds
      */
     get duration(): number {
-        const time_base = this.demuxer.streams[0].time_base;
+        const time_base = this.demuxer.streams[this.streamIndex].time_base;
         const durations = this.demuxer.streams.map(
             stream => stream.duration * time_base[0] / time_base[1]
         );
@@ -193,18 +211,28 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
      * Width in pixels
      */
     get width(): number {
-        return this.demuxer.streams[0].codecpar.width;
+        return this.demuxer.streams[this.streamIndex].codecpar.width;
     }
 
     /**
      * Height in pixels
      */
     get height(): number {
-        return this.demuxer.streams[0].codecpar.height;
+        return this.demuxer.streams[this.streamIndex].codecpar.height;
     }
 
     /**
-     * Get the image data for a given time in seconds
+     * Get the frame for a given time in seconds
+     * @param targetTime
+     */
+    async getFrameAtTime(targetTime: number): Promise<beamcoder.Frame> {
+        LOG && console.log(`getFrameAtTime time(s)=${targetTime}`);
+        const targetPts = Math.floor(this._timeToPTS(targetTime));
+        return this._getFrameAtPts(targetPts);
+    }
+
+    /**
+     * Get imageData for a given time in seconds
      * @param targetTime
      */
     async getImageDataAtTime(targetTime: number): Promise<ImageData> {
@@ -229,8 +257,16 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
      * @param time
      */
     _timeToPTS(time: number) {
-        const time_base = this.demuxer.streams[0].time_base;
+        const time_base = this.demuxer.streams[this.streamIndex].time_base;
         return time * time_base[1] / time_base[0];
+    }
+
+    /**
+     * Get the time in seconds from a given presentation timestamp (PTS)
+     */
+    ptsToTime(pts: number) {
+        const time_base = this.demuxer.streams[this.streamIndex].time_base;
+        return pts * time_base[0] / time_base[1];
     }
 
     /**
@@ -297,13 +333,13 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
                 this.filteredFrames = filteredFrames as beamcoder.DecodedFrames;
 
                 // get the closest frame
-                let closestFrame;
-                if (filteredFrames.length === 1) {
-                    closestFrame = filteredFrames[0];
-                }
-                else {
-                    closestFrame = filteredFrames.reverse().find(f => f.pts <= targetPTS);
-                }
+                // let closestFrame;
+                // if (filteredFrames.length === 1) {
+                //     closestFrame = filteredFrames[0];
+                // }
+                // else {
+                const closestFrame = filteredFrames.reverse().find(f => f.pts <= targetPTS);
+                // }
 
                 closestFramePTS = closestFrame?.pts;
                 LOG && console.log('closestFramePTS', closestFramePTS, 'targetPTS', targetPTS);
@@ -380,7 +416,7 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
 
         let packet = await this.demuxer.read();
         // LOG && console.log('packet pts', packet.pts, 'stream_index', packet.stream_index);
-        while (packet && packet.stream_index !== 0) {
+        while (packet && packet.stream_index !== this.streamIndex) {
             packet = await this.demuxer.read();
             // LOG && console.log('packet pts', packet.pts, 'stream_index', packet.stream_index);
             if (packet === null) {
@@ -388,7 +424,7 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
                 return null;
             }
         }
-        LOG && console.log('returning packet', !!packet, 'pts', packet?.pts);
+        LOG && console.log('returning packet', !!packet, 'pts', packet?.pts, 'si', packet?.stream_index);
         return packet as Packet;
     }
 
