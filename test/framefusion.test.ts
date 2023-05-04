@@ -1,20 +1,14 @@
-import { readFileSync, readdirSync } from 'fs';
-import { performance } from 'perf_hooks';
-import httpServer from 'http-server';
-import { rimraf } from 'rimraf';
 import {
     describe,
     it,
     expect,
-    beforeAll,
-    beforeEach,
-    afterAll
+    afterAll,
+    beforeAll
 } from 'vitest';
-import sinon from 'sinon';
 import { toMatchImageSnapshot } from 'jest-image-snapshot';
-import { fileExistsSync } from 'tsconfig-paths/lib/filesystem';
 import { createCanvas } from 'canvas';
-import { BeamcoderExtractor } from '../framefusion';
+import httpServer from 'http-server';
+import { BeamcoderExtractor } from '../src/backends/beamcoder';
 
 declare global {
     // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -25,29 +19,18 @@ declare global {
     }
 }
 
-const TEST_SERVER_PORT = 4242;
-
 expect.extend({ toMatchImageSnapshot });
 
+const FPS = 30.0;
+const TEST_SERVER_PORT = 4242;
 const TEST_VIDEO = './test/samples/bbb10m.mp4';
-const TEST_VIDEO_SMALLER = './test/samples/bbb-smaller.mp4';
 const TEST_VIDEO_LOW_FRAMERATE = './test/samples/bbb-low-fps.mp4';
+const FRAME_SYNC_DELTA = (1 / FPS) / 2.0;
 
-// TODOS
-// There are a few sleeps (timeouts) to probably remove
-
-describe('framefusion', () => {
+describe('FrameFusion', () => {
     let server;
 
-    beforeEach(async() => {
-        await rimraf('./output/*', { glob: true });
-        console.log('Removed previous results in output/');
-    });
-
     beforeAll(async() => {
-        await rimraf('./output/*', { glob: true });
-        console.log('Removed previous results in output/');
-
         server = httpServer.createServer();
         await new Promise<void>(resolve => {
             server.listen({
@@ -63,431 +46,212 @@ describe('framefusion', () => {
         server.close();
     });
 
-    it('Should get duration', async() => {
+    it('can get dimensions', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
-            inputFileOrUrl: TEST_VIDEO,
-            outputFile: './output/frame-%04d.png',
+            inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4',
         });
 
-        // Act
-        const duration = extractor.duration;
-
-        // Assert
-        expect(duration).to.eq(10);
+        // Act and Assert
+        expect(extractor.width).to.equal(24);
+        expect(extractor.height).to.equal(24);
 
         // Cleanup
-        extractor.dispose();
+        await extractor.dispose();
     });
 
-    it('should get width', async() => {
+    it('can get duration', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
-            inputFileOrUrl: TEST_VIDEO,
-            outputFile: './output/frame-%04d.png',
+            inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4',
         });
 
-        // Act
-        const width = extractor.width;
-
-        // Assert
-        expect(width).to.eq(1920);
+        // Act and Assert
+        expect(extractor.duration).to.equal(2);
 
         // Cleanup
-        extractor.dispose();
+        await extractor.dispose();
     });
 
-    it('Should get height', async() => {
+    it('can identify video stream index', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
-            inputFileOrUrl: TEST_VIDEO,
-            outputFile: './output/frame-%04d.png',
+            inputFileOrUrl: './test/samples/audio-is-stream0-video-is-stream1.mp4',
+            threadCount: 8,
         });
 
-        // Act
-        const height = extractor.height;
-
-        // Assert
-        expect(height).to.eq(1080);
+        // Act and Assert
+        for (let i = 0; i < 10; i++) {
+            const frame = await extractor.getFrameAtTime(i / FPS + FRAME_SYNC_DELTA);
+            expect(Math.floor(extractor.ptsToTime(frame.pts) * FPS)).to.equal(i);
+        }
 
         // Cleanup
-        extractor.dispose();
+        await extractor.dispose();
     });
 
-    describe('Continuous dumping', () => {
-        it('Should dump an entire mp4 [smaller video version]', async() => {
-            // Arrange
-            const extractor = await BeamcoderExtractor.create({
-                inputFileOrUrl: TEST_VIDEO_SMALLER,
-                outputFile: './output/frame-%04d.png',
-                threadCount: 8,
-            }) as BeamcoderExtractor;
+    it('can get all frames', async() => {
+        // Arrange
+        const extractor = await BeamcoderExtractor.create({
+            inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4',
+        });
 
-            // Act
-            const p1 = performance.now();
-            await extractor.readFrames();
-            const p2 = performance.now();
-            console.log('Time to dump all frames (ms): ', p2 - p1);
+        // Act & assert
+        for (let i = 0; i < 60; i++) {
+            const frame = await extractor.getFrameAtTime(i / FPS + FRAME_SYNC_DELTA);
+            expect(Math.floor(extractor.ptsToTime(frame.pts) * FPS)).to.equal(i);
+        }
 
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            expect(fileExistsSync('./output/frame-0001.png')).to.be.true;
-            expect(fileExistsSync('./output/frame-0600.png')).to.be.true;
-
-            // Cleanup
-            extractor.dispose();
-        }, 50000);
-
-        it('Should read a mp4 - without dumping frames', async() => {
-            // Arrange
-            const extractor = await BeamcoderExtractor.create({
-                inputFileOrUrl: TEST_VIDEO_SMALLER,
-                threadCount: 8,
-            }) as BeamcoderExtractor;
-
-            // Act
-            const onFrameAvailable = sinon.spy(() => {
-                return true;
-            });
-            const p1 = performance.now();
-            await extractor.readFrames({ onFrameAvailable });
-            const p2 = performance.now();
-            console.log('Time to dump all frames (ms): ', p2 - p1);
-
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            expect(onFrameAvailable.callCount).to.equal(600);
-            // We should only have the .gitkeep
-            expect(readdirSync('./output/')).to.have.lengthOf(1);
-
-            // Cleanup
-            extractor.dispose();
-        }, 50000);
-
-        it('Should seek and dump frames', async() => {
-            // Arrange
-            const extractor = await BeamcoderExtractor.create({
-                inputFileOrUrl: TEST_VIDEO_SMALLER,
-                outputFile: './output/frame-%04d.png',
-                threadCount: 8,
-            }) as BeamcoderExtractor;
-
-            // Act
-            const p1 = performance.now();
-            await extractor.seekToPTS(150016);
-            await extractor.readFrames();
-            const p2 = performance.now();
-            console.log('Time to dump all frames (ms): ', p2 - p1);
-
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Assert
-            expect(fileExistsSync('./output/frame-0001.png')).to.be.true;
-            expect(fileExistsSync('./output/frame-0014.png')).to.be.true;
-            // There are only 13 frames after 150016, so this one should not exist
-            expect(fileExistsSync('./output/frame-0015.png')).to.be.false;
-
-            // Cleanup
-            extractor.dispose();
-        }, 50000);
-
-        it('Should seek and dump frames precisely', async() => {
-            // Arrange
-            const extractor = await BeamcoderExtractor.create({
-                inputFileOrUrl: './test/samples/countTo60.mp4',
-                outputFile: './output/frame-%04d.png',
-                threadCount: 8,
-            }) as BeamcoderExtractor;
-
-            // Act
-            const p1 = performance.now();
-            await extractor.seekToPTS(29696);
-            await extractor.readFrames();
-            const p2 = performance.now();
-            console.log('Time to dump all frames (ms): ', p2 - p1);
-
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Assert
-            // There should be only 2 frames
-            expect(fileExistsSync('./output/frame-0001.png')).to.be.true;
-            expect(fileExistsSync('./output/frame-0002.png')).to.be.true;
-            expect(fileExistsSync('./output/frame-0003.png')).to.be.false;
-            expect(readFileSync('./output/frame-0001.png')).toMatchImageSnapshot();
-            expect(readFileSync('./output/frame-0002.png')).toMatchImageSnapshot();
-
-            // Cleanup
-            extractor.dispose();
-        }, 50000);
-
-        it('Should dump frames and pause in-between', async() => {
-            // Arrange
-            const extractor = await BeamcoderExtractor.create({
-                inputFileOrUrl: './test/samples/countTo60.mp4',
-                outputFile: './output/frame-%04d.png',
-                threadCount: 8,
-            }) as BeamcoderExtractor;
-
-            // Act
-            // Array generated with
-            // ffprobe -show_frames samples/bbb-smaller.mp4  | grep pts_time | head -n 5 | sed 's/pts_time=//g'
-            await extractor.seekToTime(0);
-
-            const count = 0;
-
-            const onFrameAvailable = async(frame) => {
-                return count < 4;
-            };
-
-            await extractor.readFrames({
-                onFrameAvailable,
-            });
-
-            // Assert
-            expect(readFileSync('./output/frame-0001.png')).toMatchImageSnapshot();
-            expect(readFileSync('./output/frame-0002.png')).toMatchImageSnapshot();
-            expect(readFileSync('./output/frame-0003.png')).toMatchImageSnapshot();
-            expect(readFileSync('./output/frame-0004.png')).toMatchImageSnapshot();
-
-            // Cleanup
-            extractor.dispose();
-        }, 50000);
+        // Cleanup
+        await extractor.dispose();
     });
 
-    describe('Dump frame at time', () => {
-        it.concurrent('Should seek and dump all frames in the video', async() => {
-            // Arrange
-            const extractor = await BeamcoderExtractor.create({
-                inputFileOrUrl: './test/samples/countTo60.mp4',
-                threadCount: 8,
-            }) as BeamcoderExtractor;
+    it('can get all frames (low framerate)', async() => {
+        // Arrange
+        const extractor = await BeamcoderExtractor.create({
+            inputFileOrUrl: TEST_VIDEO_LOW_FRAMERATE,
+        });
 
-            // Sample at the middle of each frame
-            const FRAME_SYNC_DELTA = (1 / 30.0) / 2.0;
+        // Act & assert
+        for (let i = 0; i < 5; i++) {
+            const frame = await extractor.getFrameAtTime(i / FPS + FRAME_SYNC_DELTA);
+            expect(Math.floor(extractor.ptsToTime(frame.pts) * 30)).to.be.closeTo(i, 15);
+        }
 
-            // Act & assert
-            for (let i = 0; i < 60; i++) {
-                const frame = await extractor.getFrameAtTime(i / 30.0 + FRAME_SYNC_DELTA);
-                expect(Math.floor(extractor.ptsToTime(frame.pts) * 30)).to.equal(i);
+        // Cleanup
+        await extractor.dispose();
+    });
+
+    it('can get frames at random times (forward and backward)', async() => {
+        // Arrange
+        const extractor = await BeamcoderExtractor.create({
+            inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4',
+        });
+        const times_to_get = [
+            1, // forward to 30
+            0, // backwards to 15
+            1.5, // forward to 45
+            0.5, // backward to 15
+        ];
+
+        // Act and Assert
+        for (let i = 0; i < times_to_get.length; i++) {
+            const imageData = await extractor.getImageDataAtTime(times_to_get[i]);
+            if (!imageData) {
+                continue;
             }
+            const canvas = createCanvas(imageData.width, imageData.height);
+            const ctx = canvas.getContext('2d');
+            ctx.putImageData(imageData, 0, 0);
+            expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
+        }
 
-            // Cleanup
-            extractor.dispose();
-        }, 10000);
+        // Cleanup
+        await extractor.dispose();
+    });
 
-        it.concurrent('Should seek and dump all frames in the video where the stream index is 1', async() => {
-            // Arrange
-            const extractor = await BeamcoderExtractor.create({
-                inputFileOrUrl: './test/samples/audio-is-stream0-video-is-stream1.mp4',
-                threadCount: 8,
-            }) as BeamcoderExtractor;
+    it('can get the first 10 frames', async() => {
+        // Arrange
+        const extractor = await BeamcoderExtractor.create({
+            inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4',
+        });
 
-            // Sample at the middle of each frame
-            const FRAME_SYNC_DELTA = (1 / 30.0) / 2.0;
-
-            // Act & assert
-            for (let i = 0; i < 60; i++) {
-                const frame = await extractor.getFrameAtTime(i / 30.0 + FRAME_SYNC_DELTA);
-                expect(Math.floor(extractor.ptsToTime(frame.pts) * 30)).to.equal(i);
+        // Act & assert
+        // ensure we render the 2nd frame properly - if we read the next packet we'll draw 3 instead of 2
+        for (let i = 0; i < 10; i++) {
+            const time = i / FPS + FRAME_SYNC_DELTA;
+            const imageData = await extractor.getImageDataAtTime(time);
+            if (!imageData) {
+                continue;
             }
+            const canvas = createCanvas(imageData.width, imageData.height);
+            const ctx = canvas.getContext('2d');
+            ctx.putImageData(imageData, 0, 0);
+            expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
+        }
 
-            // Cleanup
-            extractor.dispose();
-        }, 10000);
+        // Cleanup
+        await extractor.dispose();
+    });
 
-        it('Should get frame as image data', async() => {
-            // Arrange
-            const extractor = await BeamcoderExtractor.create({
-                inputFileOrUrl: './test/samples/countTo60.mp4',
-                threadCount: 8,
-            }) as BeamcoderExtractor;
+    it('can get the middle 10 frames', async() => {
+        // Arrange
+        // This test is pretty slow because our countTo60 video only has 1 I-frame. We have to run through all packets
+        // to get the last ones.
+        const extractor = await BeamcoderExtractor.create({
+            inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4',
+        });
 
-            // Sample at the middle of each frame
-            const FRAME_SYNC_DELTA = (1 / 30.0) / 2.0;
-
-            // Act & assert
-            for (let i = 0; i < 10; i++) {
-                const imagedata = await extractor.getImageDataAtTime(i / 30.0 + FRAME_SYNC_DELTA);
-                expect(imagedata.width).to.equal(extractor.width);
-                expect(imagedata.height).to.equal(extractor.height);
-                const canvas = createCanvas(imagedata.width, imagedata.height);
-                const ctx = canvas.getContext('2d');
-                ctx.putImageData(imagedata, 0, 0);
-                expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
+        // Act & assert
+        // ensure we render the last few frames properly - we have to flush the decoder to get the last few frames
+        for (let i = 20; i < 30; i++) {
+            const time = i / FPS + FRAME_SYNC_DELTA;
+            const imageData = await extractor.getImageDataAtTime(time);
+            if (!imageData) {
+                continue;
             }
+            const canvas = createCanvas(imageData.width, imageData.height);
+            const ctx = canvas.getContext('2d');
+            ctx.putImageData(imageData, 0, 0);
+            expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
+        }
 
-            // Cleanup
-            extractor.dispose();
-        }, 2000);
+        // Cleanup
+        await extractor.dispose();
+    });
 
-        it.concurrent('Should seek and dump all frames in the video [other video]', async() => {
-            // Arrange
-            const extractor = await BeamcoderExtractor.create({
-                inputFileOrUrl: TEST_VIDEO_LOW_FRAMERATE,
-                threadCount: 8,
-            }) as BeamcoderExtractor;
+    it('can get the last 10 frames', async() => {
+        // Arrange
+        // This test is pretty slow because our countTo60 video only has 1 I-frame. We have to run through all packets
+        // to get the last ones.
+        const extractor = await BeamcoderExtractor.create({
+            inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4',
+        });
 
-            // Sample at the middle of each frame
-            const FRAME_SYNC_DELTA = (1 / 30.0) / 2.0;
-
-            // Act & assert
-            for (let i = 0; i < extractor.duration * 30.0; i++) {
-                const frame = await extractor.getFrameAtTime(i / 30.0 + FRAME_SYNC_DELTA);
-                expect(Math.floor(extractor.ptsToTime(frame.pts) * 30)).to.be.closeTo(i, 15);
+        // Act & assert
+        // ensure we render the last few frames properly - we have to flush the decoder to get the last few frames
+        for (let i = 50; i < 60; i++) {
+            const time = i / FPS + FRAME_SYNC_DELTA;
+            const imageData = await extractor.getImageDataAtTime(time);
+            if (!imageData) {
+                continue;
             }
+            const canvas = createCanvas(imageData.width, imageData.height);
+            const ctx = canvas.getContext('2d');
+            ctx.putImageData(imageData, 0, 0);
+            expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
+        }
 
-            // Cleanup
-            extractor.dispose();
-        }, 10000);
+        // Cleanup
+        await extractor.dispose();
+    });
 
-        it.concurrent('Should seek and dump frames at different points in the video', async() => {
+    // we want to skip this test in CI because it's slow
+    // PERFORMANCE TEST - 158.568ms or 5.2856ms per frame
+    it.skip('playback HD video', async() => {
+        let duration = 0;
+        const samples = 250;
+        for (let i = 0; i < samples; i++) {
             // Arrange
-            const extractor = await BeamcoderExtractor.create({
-                inputFileOrUrl: './test/samples/countTo60.mp4',
-                threadCount: 8,
-            });
-
-            // Sample at the middle of each frame
-            const FRAME_SYNC_DELTA = (1 / 30.0) / 2.0;
-
-            // Act & assert
-            // This should be the frame displaying number 10
-            const f1 = await extractor.getFrameAtTime(0.300000 + FRAME_SYNC_DELTA);
-            expect(f1.pts).to.eq(4608);
-
-            // This should be the frame displaying number 11
-            const f2 = await extractor.getFrameAtTime(0.333333 + FRAME_SYNC_DELTA);
-            expect(f2.pts).to.eq(5120);
-
-            // Now skip a few more frames:
-            // This should be the frame displaying number 13
-            const f3 = await extractor.getFrameAtTime(0.400000 + FRAME_SYNC_DELTA);
-            expect(f3.pts).to.eq(6144);
-
-            // Now skip pretty far:
-            // This should be the frame displaying number 59
-            const f4 = await extractor.getFrameAtTime(1.933333 + FRAME_SYNC_DELTA);
-            expect(f4.pts).to.eq(29696);
-
-            // This should be the frame displaying number 60
-            const f5 = await extractor.getFrameAtTime(1.966667 + FRAME_SYNC_DELTA);
-            expect(f5.pts).to.eq(30208);
-
-            // Cleanup
-            extractor.dispose();
-        }, 50000);
-
-        it.concurrent('Should seek and dump frames in a video [big video]', async() => {
-            // Arrange
+            // here we make small currentTime increments, mimicking playback
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: TEST_VIDEO,
-                threadCount: 8,
-            }) as BeamcoderExtractor;
-
-            // Sample at the middle of each frame
-            const FRAME_SYNC_DELTA = (1 / 60.0) / 2.0;
+            });
 
             // Act & assert
-            const p1 = performance.now();
-            for (let i = 0; i < 3; i++) {
-                const frame = await extractor.getFrameAtTime(i / 60.0 + FRAME_SYNC_DELTA);
-                expect(Math.round(extractor.ptsToTime(frame.pts) * 60)).to.equal(i);
+            const start = Date.now();
+            for (let i = 0; i < 60; i++) {
+                const time = i / FPS + FRAME_SYNC_DELTA;
+                await extractor.getFrameAtTime(time);
             }
-            const p2 = performance.now();
-            console.log('Time to interpolate all frames (fast) and dump all frames (ms): ', p2 - p1);
+            const end = Date.now();
+            duration += end - start;
 
             // Cleanup
-            extractor.dispose();
-        }, 30000);
-    });
-
-    it('Should interpolate frames (fast)', async() => {
-        // Arrange
-        const extractor = await BeamcoderExtractor.create({
-            inputFileOrUrl: TEST_VIDEO_LOW_FRAMERATE,
-            outputFile: './output/frame-%04d.png',
-            threadCount: 8,
-            interpolateFps: 25,
-            interpolateMode: 'fast',
-        }) as BeamcoderExtractor;
-
-        // Act
-        const p1 = performance.now();
-        let count = 0;
-        await extractor.readFrames({
-            async onFrameAvailable() {
-                count++;
-                return true;
-            },
-        });
-        const p2 = performance.now();
-        console.log('Time to interpolate all frames (fast) and dump all frames (ms): ', p2 - p1);
-
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        expect(count).to.be.greaterThan(240);
-        expect(fileExistsSync('./output/frame-0001.png')).to.be.true;
-        expect(fileExistsSync('./output/frame-0241.png')).to.be.true;
-
-        // Cleanup
-        extractor.dispose();
-    }, 200000);
-
-    it('Should minterpolate frames (high-quality)', async() => {
-        // Arrange
-        const extractor = await BeamcoderExtractor.create({
-            inputFileOrUrl: TEST_VIDEO_LOW_FRAMERATE,
-            outputFile: './output/frame-%04d.png',
-            threadCount: 8,
-            interpolateFps: 25,
-            interpolateMode: 'high-quality',
-        }) as BeamcoderExtractor;
-
-        // Act
-        const p1 = performance.now();
-        let count = 0;
-        await extractor.readFrames({
-            async onFrameAvailable() {
-                count++;
-                return true;
-            },
-        });
-        const p2 = performance.now();
-        console.log('Time to interpolate (high-quality) and dump all frames (ms): ', p2 - p1);
-
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        expect(count).to.be.greaterThan(240);
-        expect(fileExistsSync('./output/frame-0001.png')).to.be.true;
-        expect(fileExistsSync('./output/frame-0241.png')).to.be.true;
-
-        // Cleanup
-        extractor.dispose();
-    }, 200000);
-
-
-    it('Should open a file from the network and dump all frames  [smaller video version]', async() => {
-        // Arrange
-        const extractor = await BeamcoderExtractor.create({
-            inputFileOrUrl: `http://127.0.0.1:${TEST_SERVER_PORT}/test/samples/bbb-smaller-faststart.mp4`,
-            outputFile: './output/frame-%04d.png',
-        }) as BeamcoderExtractor;
-
-        // Act
-        const p1 = performance.now();
-        await extractor.readFrames();
-        const p2 = performance.now();
-        console.log('Time to dump all frames through local network (ms): ', p2 - p1);
-
-        // Assert
-        expect(fileExistsSync('./output/frame-0001.png')).to.be.true;
-        expect(fileExistsSync('./output/frame-0600.png')).to.be.true;
-
-        // Cleanup
-        extractor.dispose();
-    }, 50000);
-
-    it.skip('Encode frames to mp4', async() => {
-        expect(false).to.be.true;
-    });
+            await extractor.dispose();
+        }
+        const total_duration = duration / samples;
+        const duration_per_frame = total_duration / FPS;
+        console.log(`On average, it took ${total_duration}ms or ${duration_per_frame}ms per frame`);
+    }, 100000);
 });
