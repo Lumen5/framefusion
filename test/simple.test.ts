@@ -65,11 +65,10 @@ describe('simple', () => {
     });
 
     it('can identify video stream', async() => {
-        console.log('---------------------------');
         const extractor = await SimpleExtractor.create({
             inputFileOrUrl: './test/samples/audio-is-stream0-video-is-stream1.mp4',
             threadCount: 8,
-        }) as SimpleExtractor;
+        });
 
         for (let i = 0; i < 10; i++) {
             const frame = await extractor.getFrameAtTime(i / 30.0 + FRAME_SYNC_DELTA);

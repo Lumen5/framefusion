@@ -62,8 +62,6 @@ const createFilter = async({
         }
     }
 
-    filterSpec = [...filterSpec];
-
     const filterSpecStr = filterSpec.join(', ') + '[out0:v]';
 
     LOG && console.log(`filterSpec: ${filterSpecStr}`);
@@ -90,7 +88,6 @@ const createFilter = async({
     });
 };
 
-const MAX_PACKET_READS = 1000;
 const STREAM_TYPE_VIDEO = 'video';
 
 /**
@@ -100,67 +97,67 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
     /**
      * The demuxer reads the file and outputs packet streams
      */
-    demuxer: Demuxer = null;
+    #demuxer: Demuxer = null;
 
     /**
      * The decoder reads packets and can output raw frame data
      */
-    decoder: Decoder = null;
+    #decoder: Decoder = null;
 
     /**
-     * Packets can be filtered to change colorspace, fps and add various effects. If there are no color space changes or
+     * Packets can be filtered to change colorspace, fps and add various effects. If there are no colorspace changes or
      * filters, filter might not be necessary.
      */
-    filterer: Filterer = null;
+    #filterer: Filterer = null;
 
     /**
-     * This is where we store our filtered frames closest to the target time. We hang on to them for two reasons:
+     * This is where we store available filtered frames which have not been requested yet.
+     * We keep these in chronological order. We hang on to them for two reasons:
      * 1. so we can return them if we get a request for the same time again
      * 2. so we can return frames close the end of the stream. When such a frame is requested we have to flush (destroy)
      * the encoder to get the last few frames. This avoids having to re-create an encoder.
      */
-    filteredFrames: undefined[] | DecodedFrames = [];
+    #filteredFrames: undefined[] | DecodedFrames = [];
 
     /**
      * This contains the last raw frames we read from the demuxer. We use it as a starting point for each new query. We
      * do this ensure we don't skip any frames.
      */
-    frames = [];
+    #frames = [];
 
     /**
      * This contains the last packet we read from the demuxer. We use it as a starting point for each new query. We do
      * this ensure we don't skip any frames.
      */
-    packet: Packet = null;
+    #packet: Packet = null;
 
     /**
      * The last target presentation timestamp (PTS) we requested. If we never requested a time(stamp) then this
      * value is null
      */
-    previousTargetPTS: null | number = null;
+    #previousTargetPTS: null | number = null;
 
     /**
      * The number of threads to use for decoding
      */
-    threadCount = 8;
+    #threadCount = 8;
 
     /**
      * The index of the video stream in the demuxer
-     * @param args
      */
-    streamIndex = 0;
+    #streamIndex = 0;
 
-    static async create(args: ExtractorArgs): Promise<Extractor> {
+    static async create(args: ExtractorArgs): Promise<SimpleExtractor> {
         const extractor = new SimpleExtractor();
         await extractor.init(args);
-        return extractor as unknown as Extractor;
+        return extractor;
     }
 
     async init({
         inputFileOrUrl,
         threadCount = 8,
     }: ExtractorArgs): Promise<void> {
-        this.threadCount = threadCount;
+        this.#threadCount = threadCount;
         if (inputFileOrUrl.startsWith('http')) {
             LOG && console.log('downloading url', inputFileOrUrl);
             const downloadUrl = new DownloadVideoURL(inputFileOrUrl);
@@ -169,29 +166,31 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
             LOG && console.log('finished downloading');
         }
         LOG && console.log('loading', inputFileOrUrl);
-        this.demuxer = await beamcoder.demuxer('file:' + inputFileOrUrl);
-        LOG && console.log('streams', this.demuxer.streams.map(stream => stream.codecpar.codec_type));
-        this.streamIndex = this.demuxer.streams.findIndex(stream => stream.codecpar.codec_type === STREAM_TYPE_VIDEO);
-        LOG && console.log('streamIndex', this.streamIndex);
-        if (this.streamIndex === -1) {
+        this.#demuxer = await beamcoder.demuxer('file:' + inputFileOrUrl);
+        LOG && console.log('streams', this.#demuxer.streams.map(stream => stream.codecpar.codec_type));
+        this.#streamIndex = this.#demuxer.streams.findIndex(stream => stream.codecpar.codec_type === STREAM_TYPE_VIDEO);
+        LOG && console.log('streamIndex', this.#streamIndex);
+        if (this.#streamIndex === -1) {
             throw new Error(`File has no ${STREAM_TYPE_VIDEO} stream!`);
         }
-        LOG && console.log('stream type', this.demuxer.streams[this.streamIndex].codecpar.codec_type);
-        this.filterer = await createFilter({
-            stream: this.demuxer.streams[this.streamIndex],
+        LOG && console.log('stream type', this.#demuxer.streams[this.#streamIndex].codecpar.codec_type);
+        this.#filterer = await createFilter({
+            stream: this.#demuxer.streams[this.#streamIndex],
             outputPixelFormat: 'rgba',
         });
     }
 
-    _createDecoder() {
-        if (this.decoder) {
-            this.decoder.flush();
-            this.decoder = null;
+    #createDecoder() {
+        // It's possible that we need to create decoder multiple times during the lifecycle of this extractor so we
+        // need to make sure we destroy the old one first if it exists
+        if (this.#decoder) {
+            this.#decoder.flush();
+            this.#decoder = null;
         }
-        this.decoder = createDecoder({
-            demuxer: this.demuxer as Demuxer,
-            streamIndex: this.streamIndex,
-            threadCount: this.threadCount,
+        this.#decoder = createDecoder({
+            demuxer: this.#demuxer as Demuxer,
+            streamIndex: this.#streamIndex,
+            threadCount: this.#threadCount,
         });
     }
 
@@ -199,8 +198,8 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
      * Duration in seconds
      */
     get duration(): number {
-        const time_base = this.demuxer.streams[this.streamIndex].time_base;
-        const durations = this.demuxer.streams.map(
+        const time_base = this.#demuxer.streams[this.#streamIndex].time_base;
+        const durations = this.#demuxer.streams.map(
             stream => stream.duration * time_base[0] / time_base[1]
         );
 
@@ -211,14 +210,14 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
      * Width in pixels
      */
     get width(): number {
-        return this.demuxer.streams[this.streamIndex].codecpar.width;
+        return this.#demuxer.streams[this.#streamIndex].codecpar.width;
     }
 
     /**
      * Height in pixels
      */
     get height(): number {
-        return this.demuxer.streams[this.streamIndex].codecpar.height;
+        return this.#demuxer.streams[this.#streamIndex].codecpar.height;
     }
 
     /**
@@ -257,7 +256,7 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
      * @param time
      */
     _timeToPTS(time: number) {
-        const time_base = this.demuxer.streams[this.streamIndex].time_base;
+        const time_base = this.#demuxer.streams[this.#streamIndex].time_base;
         return time * time_base[1] / time_base[0];
     }
 
@@ -265,13 +264,12 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
      * Get the time in seconds from a given presentation timestamp (PTS)
      */
     ptsToTime(pts: number) {
-        const time_base = this.demuxer.streams[this.streamIndex].time_base;
+        const time_base = this.#demuxer.streams[this.#streamIndex].time_base;
         return pts * time_base[0] / time_base[1];
     }
 
     /**
      * Get the frame at the given presentation timestamp (PTS)
-     * @param targetPTS
      */
     async _getFrameAtPts(targetPTS: number) {
         LOG && console.log('_getFrameAtPts', targetPTS, '-> duration', this.duration);
@@ -280,28 +278,28 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
         // seek and create a decoder when retrieving a frame for the first time or when seeking backwards
         // we have to create a new decoder when seeking backwards as the decoder currently doesn't support seeking
         // (it doesn't properly release frames when seeking backwards)
-        if (!this.previousTargetPTS || this.previousTargetPTS > targetPTS) {
-            await this.demuxer.seek({
+        if (!this.#previousTargetPTS || this.#previousTargetPTS > targetPTS) {
+            await this.#demuxer.seek({
                 stream_index: 0, // even though we specify the stream index, it still seeks all streams
                 timestamp: targetPTS,
                 any: false,
             });
-            this._createDecoder();
-            this.packet = null;
-            this.frames = [];
+            this.#createDecoder();
+            this.#packet = null;
+            this.#frames = [];
         }
 
         // the decoder has been previously flushed while retrieving frames at the end of the stream and has thus been
         // destroyed. See if the requested targetPTS is part of the last few frames we decoded. If so, return it.
-        if (!this.decoder) {
+        if (!this.#decoder) {
             LOG && console.log('no decoder');
-            if ((this.filteredFrames as any).length > 0) {
-                const closestFrame = (this.filteredFrames as any).find(f => f.pts <= targetPTS);
+            if ((this.#filteredFrames as any).length > 0) {
+                const closestFrame = (this.#filteredFrames as any).find(f => f.pts <= targetPTS);
                 // we should probably check the delta between the targetPTS and the closestFrame. If it's too big, we
                 // should return null or something.
                 LOG && console.log('returning closest frame with pts', closestFrame.pts);
                 LOG && console.log('read', packetReadCount, 'packets');
-                this.previousTargetPTS = targetPTS;
+                this.#previousTargetPTS = targetPTS;
                 return closestFrame;
             }
             throw Error('Unexpected condition: no decoder and no frames');
@@ -313,26 +311,28 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
         let outputFrame = null;
 
         // This is the first time we're decoding frames. Get the first packet and decode it.
-        if (!this.packet && this.frames.length === 0) {
+        if (!this.#packet && this.#frames.length === 0) {
             // LOG && console.log('getting initial packet and frames');
-            ({ packet: this.packet, frames: this.frames } = await this._getNextPacketAndDecodeFrames());
+            ({ packet: this.#packet, frames: this.#frames } = await this._getNextPacketAndDecodeFrames());
             packetReadCount++;
         }
-        // LOG && console.log('packet', !!this.packet, 'frames', this.frames.length, 'pts', this.packet.pts);
+        // LOG && console.log('packet', !!this.#packet, 'frames', this.#frames.length, 'pts', this.#packet.pts);
 
-        while ((this.packet || this.frames.length !== 0) && closestFramePTS < targetPTS && packetReadCount < MAX_PACKET_READS) {
-            LOG && console.log('packet si:', this.packet?.stream_index, 'pts:', this.packet?.pts, 'frames:', this.frames?.length);
-            LOG && console.log('frames', this.frames?.length, 'frames.pts:', this.frames?.map(f => f.pts), '-> target.pts:', targetPTS);
+        while ((this.#packet || this.#frames.length !== 0) && closestFramePTS < targetPTS) {
+            LOG && console.log('packet si:', this.#packet?.stream_index, 'pts:', this.#packet?.pts, 'frames:', this.#frames?.length);
+            LOG && console.log('frames', this.#frames?.length, 'frames.pts:', this.#frames?.map(f => f.pts), '-> target.pts:', targetPTS);
 
             // packet contains frames
-            if (this.frames.length !== 0) {
+            if (this.#frames.length !== 0) {
                 // filter the frames
-                const filteredResult = await this.filterer.filter([{ name: 'in0:v', frames: this.frames }]);
+                const filteredResult = await this.#filterer.filter([{ name: 'in0:v', frames: this.#frames }]);
                 filteredFrames = filteredResult.flatMap(r => r.frames);
                 LOG && console.log('filteredFrames', filteredFrames.length, 'filteredFrames.pts:', filteredFrames.map(f => f.pts), '-> target.pts:', targetPTS);
-                this.filteredFrames = filteredFrames as beamcoder.DecodedFrames;
+                this.#filteredFrames = filteredFrames as beamcoder.DecodedFrames;
 
-                // get closest frame
+                // get the closest frame to our target presentation timestamp (PTS)
+                // Beamcoder returns decoded packet frames as follows: [1000, 2000, 3000, 4000]
+                // If we're looking for a frame at 2500, we want to return the frame at 2000
                 const closestFrame = filteredFrames.reverse().find(f => f.pts <= targetPTS);
                 closestFramePTS = closestFrame?.pts;
                 LOG && console.log('closestFramePTS', closestFramePTS, 'targetPTS', targetPTS);
@@ -349,12 +349,9 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
                 }
             }
             // get the next packet and frames
-            ({ packet: this.packet, frames: this.frames } = await this._getNextPacketAndDecodeFrames());
+            ({ packet: this.#packet, frames: this.#frames } = await this._getNextPacketAndDecodeFrames());
 
             // keep track of how many packets we've read
-            if (packetReadCount >= MAX_PACKET_READS) {
-                throw Error('Reached max packet reads');
-            }
             packetReadCount++;
         }
 
@@ -363,14 +360,14 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
         }
         LOG && console.log('read', packetReadCount, 'packets');
 
-        this.previousTargetPTS = targetPTS;
+        this.#previousTargetPTS = targetPTS;
         return outputFrame;
     }
 
     /**
-     * Get the next packet from the video stream and decode it into frames. Each frame has a presentation time stamp.
-     * If we've reached the end of the stream and no more packets are available, we'll extract the last frames from
-     * the decoder and destroy it.
+     * Get the next packet from the video stream and decode it into frames. Each frame has a presentation time stamp
+     * (PTS). If we've reached the end of the stream and no more packets are available, we'll extract the last frames
+     * from the decoder and destroy it.
      */
     async _getNextPacketAndDecodeFrames() {
         const packet = await this._getNextVideoStreamPacket();
@@ -379,17 +376,17 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
         // NOTE: maybe we should only decode frames when we're relatively close to our targetPTS?
         // extract frames from the packet
         let decodedFrames = null;
-        if (packet !== null && this.decoder) {
-            decodedFrames = await this.decoder.decode(packet as Packet);
+        if (packet !== null && this.#decoder) {
+            decodedFrames = await this.#decoder.decode(packet as Packet);
             LOG && console.log('decodedFrames', decodedFrames.frames.length, decodedFrames.frames.map(f => f.pts));
         }
         // we've reached the end of the stream
         else {
-            if (this.decoder) {
+            if (this.#decoder) {
                 LOG && console.log('getting the last frames from the decoder');
                 // flush the decoder -- this will return the last frames and destroy the decoder
-                decodedFrames = await this.decoder.flush();
-                this.decoder = null;
+                decodedFrames = await this.#decoder.flush();
+                this.#decoder = null;
             }
             else {
                 LOG && console.log('no more frames to decode');
@@ -407,10 +404,10 @@ export class SimpleExtractor extends BaseExtractor implements Extractor {
     async _getNextVideoStreamPacket(): Promise<null | Packet> {
         LOG && console.log('_getNextVideoStreamPacket');
 
-        let packet = await this.demuxer.read();
+        let packet = await this.#demuxer.read();
         // LOG && console.log('packet pts', packet.pts, 'stream_index', packet.stream_index);
-        while (packet && packet.stream_index !== this.streamIndex) {
-            packet = await this.demuxer.read();
+        while (packet && packet.stream_index !== this.#streamIndex) {
+            packet = await this.#demuxer.read();
             // LOG && console.log('packet pts', packet.pts, 'stream_index', packet.stream_index);
             if (packet === null) {
                 LOG && console.log('no more packets');
