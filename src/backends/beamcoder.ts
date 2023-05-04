@@ -33,6 +33,10 @@ const createDecoder = ({
     });
 };
 
+/**
+ * A filter to convert between color spaces.
+ * An example would be YUV to RGB, for mp4 to png conversion.
+ */
 const createFilter = async({
     stream,
     outputPixelFormat,
