@@ -92,3 +92,11 @@ We also want to build the library in a way that we can provide different backend
 Only point 1 is implemented so far (Extracting frames from videos).
 
 We also only provide a beamcoder backend and we still have to figure out how we can swap backends and skip compiling beamcoder. This could be through different npm packages.
+
+# Contributing
+
+Make sure you follow our [code of conduct](CODE_OF_CONDUCT.md).
+
+Additionally, make sure that any code and video samples you add to the repo are in the public domain or compatible with our [GPLv3 license](LICENSE).
+
+It's preferable to build new test videos to avoid committing copyrighted videos that might have been encountered in production environments.
