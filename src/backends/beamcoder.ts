@@ -8,8 +8,9 @@ import type {
 import beamcoder from '@antoinemopa/beamcoder';
 import type { ImageData } from 'canvas';
 import { createImageData } from 'canvas';
+import fs from 'fs-extra';
 import { BaseExtractor } from '../BaseExtractor';
-import type { Extractor, ExtractorArgs, InterpolateMode } from '../../framefusion';
+import type { Extractor, ExtractorArgs } from '../../framefusion';
 import { DownloadVideoURL } from '../DownloadVideoURL';
 
 const VERBOSE = false;
@@ -40,35 +41,22 @@ const createDecoder = ({
 const createFilter = async({
     stream,
     outputPixelFormat,
-    interpolateFps,
-    interpolateMode = 'fast',
+    playbackRate = 1.0,
 }: {
     stream: beamcoder.Stream;
     outputPixelFormat: string;
-    interpolateFps?: number;
-    interpolateMode?: InterpolateMode;
+    playbackRate?: number;
 }): Promise<beamcoder.Filterer> => {
     if (!stream.codecpar.format) {
         return null;
     }
-
     let filterSpec = [`[in0:v]format=${stream.codecpar.format}`];
 
-    if (interpolateFps) {
-        if (interpolateMode === 'high-quality') {
-            filterSpec = [...filterSpec, `minterpolate=fps=${interpolateFps}`];
-        }
-        else if (interpolateMode === 'fast') {
-            filterSpec = [...filterSpec, `fps=${interpolateFps}`];
-        }
-        else {
-            throw new Error(`Unexpected interpolation mode: ${interpolateMode}`);
-        }
+    if (playbackRate !== 1.0) {
+        filterSpec = [...filterSpec, `setpts=${1 / playbackRate}*PTS`];
     }
 
     const filterSpecStr = filterSpec.join(', ') + '[out0:v]';
-
-    VERBOSE && console.log(`filterSpec: ${filterSpecStr}`);
 
     return beamcoder.filterer({
         filterType: 'video',
@@ -153,6 +141,13 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     #streamIndex = 0;
 
     /**
+     * Sets the rate at which the media is being played back. This is used to implement user controls for fast-forward,
+     * slow motion, and so forth. The normal playback rate is multiplied by this value to obtain the current rate, so a
+     * value of 1.0 indicates normal speed.
+     */
+    #playbackRate = 1.0;
+
+    /**
      * Encoder/Decoder construction is async, so it can't be put in a regular constructor.
      * Use and await this method to generate an extractor.
      */
@@ -174,14 +169,28 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             inputFileOrUrl = downloadUrl.filepath;
             VERBOSE && console.log('finished downloading');
         }
+        if (!fs.pathExistsSync(inputFileOrUrl)) {
+            throw new Error(`File does not exist: ${inputFileOrUrl}`);
+        }
         this.#demuxer = await beamcoder.demuxer('file:' + inputFileOrUrl);
         this.#streamIndex = this.#demuxer.streams.findIndex(stream => stream.codecpar.codec_type === STREAM_TYPE_VIDEO);
         if (this.#streamIndex === -1) {
             throw new Error(`File has no ${STREAM_TYPE_VIDEO} stream!`);
         }
+    }
+
+    async #createFilter({
+        playbackRate,
+    }: {
+        playbackRate?: number;
+    }) {
+        if (this.#filterer) {
+            this.#filterer = null;
+        }
         this.#filterer = await createFilter({
             stream: this.#demuxer.streams[this.#streamIndex],
             outputPixelFormat: COLORSPACE_RGBA,
+            playbackRate,
         });
     }
 
@@ -197,6 +206,17 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             streamIndex: this.#streamIndex,
             threadCount: this.#threadCount,
         });
+    }
+
+    set playbackRate(rate: number) {
+        if (this.playbackRate === rate) {
+            return;
+        }
+        this.#playbackRate = rate;
+    }
+
+    get playbackRate(): number {
+        return this.#playbackRate;
     }
 
     /**
@@ -231,7 +251,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      */
     async getFrameAtTime(targetTime: number): Promise<beamcoder.Frame> {
         VERBOSE && console.log(`getFrameAtTime time(s)=${targetTime}`);
-        const targetPts = Math.floor(this._timeToPTS(targetTime));
+        const targetPts = Math.floor(this._timeToPTS(targetTime * this.#playbackRate));
         return this._getFrameAtPts(targetPts);
     }
 
@@ -240,7 +260,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      * @param targetTime
      */
     async getImageDataAtTime(targetTime: number): Promise<ImageData> {
-        const targetPts = Math.floor(this._timeToPTS(targetTime));
+        const targetPts = Math.floor(this._timeToPTS(targetTime * this.#playbackRate));
         VERBOSE && console.log('targetTime', targetTime, '-> targetPts', targetPts);
         const frame = await this._getFrameAtPts(targetPts);
         if (!frame) {
@@ -278,6 +298,12 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     async _getFrameAtPts(targetPTS: number) {
         VERBOSE && console.log('_getFrameAtPts', targetPTS, '-> duration', this.duration);
         let packetReadCount = 0;
+
+        if (!this.#filterer) {
+            await this.#createFilter({
+                playbackRate: this.playbackRate,
+            });
+        }
 
         // seek and create a decoder when retrieving a frame for the first time or when seeking backwards
         //  we have to create a new decoder when seeking backwards as the decoder can only process frames in

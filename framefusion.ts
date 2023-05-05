@@ -8,17 +8,9 @@ export type Frame = {
     height: number;
 };
 
-export type InterpolateMode = 'fast' | 'high-quality';
-
 export type ExtractorArgs = {
     inputFileOrUrl?: string;
-    outputFile?: string;
     threadCount?: number;
-    endTime?: number;
-    interpolateFps?: number;
-    interpolateMode?: InterpolateMode;
-    // ffmpeg:    https://ffmpeg.org/doxygen/trunk/pixfmt_8h.html#a9a8e335cf3be472042bc9f0cf80cd4c5
-    // gstreamer: https://gstreamer.freedesktop.org/documentation/video/video-format.html?gi-language=c#GstVideoFormat
 };
 
 export interface Extractor {

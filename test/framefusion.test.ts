@@ -24,6 +24,7 @@ expect.extend({ toMatchImageSnapshot });
 const FPS = 30.0;
 const TEST_SERVER_PORT = 4242;
 const TEST_VIDEO = './test/samples/bbb10m.mp4';
+const TEST_VIDEO_SMALLER = './test/samples/bbb-smaller.mp4';
 const TEST_VIDEO_LOW_FRAMERATE = './test/samples/bbb-low-fps.mp4';
 const FRAME_SYNC_DELTA = (1 / FPS) / 2.0;
 
@@ -104,6 +105,68 @@ describe('FrameFusion', () => {
 
         // Cleanup
         await extractor.dispose();
+    });
+
+    describe('can set playbackRate', () => {
+        it('low', async() => {
+            // Arrange
+            const extractor = await BeamcoderExtractor.create({
+                inputFileOrUrl: TEST_VIDEO_SMALLER,
+            });
+            extractor.playbackRate = 0.5;
+
+            for (let i = 0; i < 10; i++) {
+                const time = i / FPS + FRAME_SYNC_DELTA;
+                const imageData = await extractor.getImageDataAtTime(time);
+                if (!imageData) {
+                    continue;
+                }
+                const canvas = createCanvas(imageData.width, imageData.height);
+                const ctx = canvas.getContext('2d');
+                ctx.putImageData(imageData, 0, 0);
+                expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
+            }
+        });
+
+        it('normal', async() => {
+            // Arrange
+            const extractor = await BeamcoderExtractor.create({
+                inputFileOrUrl: TEST_VIDEO_SMALLER,
+            });
+            extractor.playbackRate = 1.0;
+
+            for (let i = 0; i < 10; i++) {
+                const time = i / FPS + FRAME_SYNC_DELTA;
+                const imageData = await extractor.getImageDataAtTime(time);
+                if (!imageData) {
+                    continue;
+                }
+                const canvas = createCanvas(imageData.width, imageData.height);
+                const ctx = canvas.getContext('2d');
+                ctx.putImageData(imageData, 0, 0);
+                expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
+            }
+        });
+
+        it('high', async() => {
+            // Arrange
+            const extractor = await BeamcoderExtractor.create({
+                inputFileOrUrl: TEST_VIDEO_SMALLER,
+            });
+            extractor.playbackRate = 2.0;
+
+            for (let i = 0; i < 10; i++) {
+                const time = i / FPS + FRAME_SYNC_DELTA;
+                const imageData = await extractor.getImageDataAtTime(time);
+                if (!imageData) {
+                    continue;
+                }
+                const canvas = createCanvas(imageData.width, imageData.height);
+                const ctx = canvas.getContext('2d');
+                ctx.putImageData(imageData, 0, 0);
+                expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
+            }
+        });
     });
 
     it('can get all frames (low framerate)', async() => {
@@ -250,8 +313,5 @@ describe('FrameFusion', () => {
             // Cleanup
             await extractor.dispose();
         }
-        const total_duration = duration / samples;
-        const duration_per_frame = total_duration / FPS;
-        console.log(`On average, it took ${total_duration}ms or ${duration_per_frame}ms per frame`);
     }, 100000);
 });
