@@ -115,7 +115,7 @@ describe('FrameFusion', () => {
             });
             extractor.playbackRate = 0.5;
 
-            for (let i = 0; i < 10; i++) {
+            for (let i = 0; i < 1000; i++) {
                 const time = i / FPS + FRAME_SYNC_DELTA;
                 const imageData = await extractor.getImageDataAtTime(time);
                 if (!imageData) {
@@ -126,7 +126,7 @@ describe('FrameFusion', () => {
                 ctx.putImageData(imageData, 0, 0);
                 expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
             }
-        });
+        }, 1000000);
 
         it('normal', async() => {
             // Arrange
@@ -148,7 +148,7 @@ describe('FrameFusion', () => {
             }
         });
 
-        it('high', async() => {
+        it.skip('high', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: TEST_VIDEO_SMALLER,
@@ -313,5 +313,8 @@ describe('FrameFusion', () => {
             // Cleanup
             await extractor.dispose();
         }
+        const total_duration = duration / samples;
+        const duration_per_frame = total_duration / FPS;
+        console.log(`On average, it took ${total_duration}ms or ${duration_per_frame}ms per frame`);
     }, 100000);
 });

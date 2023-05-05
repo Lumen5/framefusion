@@ -12,7 +12,7 @@ png_files = [file for file in files if file.endswith(".png")]
 print(len(png_files))
 
 for i in range(len(png_files)):
-    filename = f'framefusion-test-ts-test-framefusion-test-ts-frame-fusion-can-get-all-frames-low-playback-rate-{i+1}-snap.png'
+    filename = f'framefusion-test-ts-test-framefusion-test-ts-frame-fusion-can-set-playback-rate-low-{i+1}-snap.png'
     new_filename = f'framefusion{i:03d}.png'
     src = os.path.join(path, filename)
     dst = os.path.join(path, new_filename)
