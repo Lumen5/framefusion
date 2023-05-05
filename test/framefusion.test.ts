@@ -148,7 +148,7 @@ describe('FrameFusion', () => {
             }
         });
 
-        it.skip('high', async() => {
+        it('high', async() => {
             // Arrange
             const extractor = await BeamcoderExtractor.create({
                 inputFileOrUrl: TEST_VIDEO_SMALLER,
