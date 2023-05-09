@@ -341,7 +341,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
 
                 closestFramePTS = closestFrame?.pts;
                 VERBOSE && console.log('closestFramePTS', closestFramePTS, 'targetPTS', targetPTS);
-                if (!outputFrame || closestFramePTS < targetPTS) {
+                if (!outputFrame || closestFramePTS <= targetPTS) {
                     VERBOSE && console.log('assigning outputFrame', closestFrame?.pts);
                     outputFrame = closestFrame;
                 }

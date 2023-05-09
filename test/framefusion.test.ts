@@ -128,10 +128,10 @@ describe('FrameFusion', () => {
             inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4',
         });
         const times_to_get = [
-            1, // forward to 30
-            0, // backwards to 15
-            1.5, // forward to 45
-            0.5, // backward to 15
+            1, // forward to 31
+            0, // backwards to 1
+            1.5, // forward to 46
+            0.5, // backward to 16
         ];
 
         // Act and Assert
