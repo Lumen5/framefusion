@@ -1,9 +1,9 @@
 import type {
-    DecodedFrames,
     Packet,
     Demuxer,
     Decoder,
-    Filterer
+    Filterer,
+    Frame
 } from '@antoinemopa/beamcoder';
 import beamcoder from '@antoinemopa/beamcoder';
 import type { ImageData } from 'canvas';
@@ -94,7 +94,6 @@ const createFilter = async({
 
 const STREAM_TYPE_VIDEO = 'video';
 const COLORSPACE_RGBA = 'rgba';
-const MAX_FILTERED_FRAME_COUNT = 20;
 
 /**
  * A simple extractor that uses beamcoder to extract frames from a video file.
@@ -117,13 +116,13 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     #filterer: Filterer = null;
 
     /**
-     * This is where we store available filtered frames which have not been requested yet.
+     * This is where we store filtered frames from each previously processed packet.
      * We keep these in chronological order. We hang on to them for two reasons:
      * 1. so we can return them if we get a request for the same time again
      * 2. so we can return frames close the end of the stream. When such a frame is requested we have to flush (destroy)
      * the encoder to get the last few frames. This avoids having to re-create an encoder.
      */
-    #filteredFrames: undefined[] | DecodedFrames = [];
+    #filteredFramesPacket: undefined[] | Array<Array<Frame>> = [];
 
     /**
      * This contains the last raw frames we read from the demuxer. We use it as a starting point for each new query. We
@@ -281,8 +280,8 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         let packetReadCount = 0;
 
         // seek and create a decoder when retrieving a frame for the first time or when seeking backwards
-        //  we have to create a new decoder when seeking backwards as the decoder can only process frames in
-        //  chronological order.
+        // we have to create a new decoder when seeking backwards as the decoder can only process frames in
+        // chronological order.
         if (!this.#previousTargetPTS || this.#previousTargetPTS > targetPTS) {
             await this.#demuxer.seek({
                 stream_index: 0, // even though we specify the stream index, it still seeks all streams
@@ -294,17 +293,18 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             this.#frames = [];
         }
 
-        // Read packets until we have a frame which is closest to targetPTS
         let filteredFrames = null;
         let closestFramePTS = -1;
         let outputFrame = null;
 
-        if ((this.#filteredFrames as any).length > 0) {
-            const closestFrame = (this.#filteredFrames as any).find(f => f.pts <= targetPTS);
-            VERBOSE && console.log('returning closest frame with pts', closestFrame?.pts);
-            VERBOSE && console.log('read', packetReadCount, 'packets');
+        // If we have previously filtered frames, get the frame closest to our targetPTS
+        if (this.#filteredFramesPacket.length > 0) {
+            const closestFrame = this.#filteredFramesPacket
+                .flat()
+                .find(f => (f as Frame).pts <= targetPTS);
             if (closestFrame) {
-                closestFramePTS = closestFrame.pts;
+                VERBOSE && console.log('returning previously filtered frame with pts', closestFrame?.pts);
+                closestFramePTS = (closestFrame as Frame).pts;
                 outputFrame = closestFrame;
             }
         }
@@ -314,6 +314,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             ({ packet: this.#packet, frames: this.#frames } = await this._getNextPacketAndDecodeFrames());
             packetReadCount++;
         }
+        // Read packets until we have a frame which is closest to targetPTS
         while ((this.#packet || this.#frames.length !== 0) && closestFramePTS < targetPTS) {
             VERBOSE && console.log('packet si:', this.#packet?.stream_index, 'pts:', this.#packet?.pts, 'frames:', this.#frames?.length);
             VERBOSE && console.log('frames', this.#frames?.length, 'frames.pts:', this.#frames?.map(f => f.pts), '-> target.pts:', targetPTS);
@@ -329,12 +330,16 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
                 // Beamcoder returns decoded packet frames as follows: [1000, 2000, 3000, 4000]
                 // If we're looking for a frame at 2500, we want to return the frame at 2000
                 const closestFrame = filteredFrames.reverse().find(f => f.pts <= targetPTS);
+
+                // The packet contains frames, but all of them have PTS larger than our a targetPTS (we looked too far)
                 if (!closestFrame) {
                     return outputFrame;
                 }
-                this.#filteredFrames = filteredFrames.concat(this.#filteredFrames);
-                while ((this.#filteredFrames as any).length > MAX_FILTERED_FRAME_COUNT) {
-                    (this.#filteredFrames as any).pop();
+
+                // store the filtered packet frames for later reuse
+                this.#filteredFramesPacket.unshift(filteredFrames);
+                if (this.#filteredFramesPacket.length > 2) {
+                    this.#filteredFramesPacket.pop();
                 }
 
                 closestFramePTS = closestFrame?.pts;
@@ -376,7 +381,6 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         const packet = await this._getNextVideoStreamPacket();
         VERBOSE && console.log('packet pts:', packet?.pts);
 
-        // NOTE: maybe we should only decode frames when we're relatively close to our targetPTS?
         // extract frames from the packet
         let decodedFrames = null;
         if (packet !== null && this.#decoder) {
@@ -448,7 +452,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         }
         this.#demuxer.forceClose();
         this.#filterer = null;
-        this.#filteredFrames = undefined;
+        this.#filteredFramesPacket = undefined;
         this.#frames = [];
         this.#packet = null;
         this.#previousTargetPTS = null;
