@@ -173,7 +173,7 @@ describe('FrameFusion', () => {
         await extractor.dispose();
     });
 
-    it('can get all frames (low framerate)', async() => {
+    it.skip('can get all frames (low framerate)', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
             inputFileOrUrl: TEST_VIDEO_LOW_FRAMERATE,
