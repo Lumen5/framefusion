@@ -90,6 +90,38 @@ describe('FrameFusion', () => {
         await extractor.dispose();
     });
 
+    it('can get correct frame', async() => {
+        // Arrange
+        const extractor = await BeamcoderExtractor.create({
+            inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4',
+        });
+        const times = [
+            1.6,
+            1.623077,
+            1.646154,
+            1.669231,
+            1.692308,
+            1.715384,
+            1.738462,
+            1.761538,
+            1.784615,
+            1.807693,
+            1.830769,
+            1.853846,
+            1.876923];
+
+        for (let i = 0; i < times.length; i++) {
+            const imageData = await extractor.getImageDataAtTime(times[i]); // 3
+            if (!imageData) {
+                throw new Error(`Failed to get image data for time ${times[i]}`);
+            }
+            const canvas = createCanvas(imageData.width, imageData.height);
+            const ctx = canvas.getContext('2d');
+            ctx.putImageData(imageData, 0, 0);
+            expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
+        }
+    });
+
     it('can get all frames', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
@@ -99,6 +131,7 @@ describe('FrameFusion', () => {
         // Act & assert
         for (let i = 0; i < 60; i++) {
             const frame = await extractor.getFrameAtTime(i / FPS + FRAME_SYNC_DELTA);
+            // console.log(Math.floor(extractor.ptsToTime(frame.pts) * FPS), i);
             expect(Math.floor(extractor.ptsToTime(frame.pts) * FPS)).to.equal(i);
         }
 

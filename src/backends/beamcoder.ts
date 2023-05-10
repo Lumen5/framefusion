@@ -94,6 +94,7 @@ const createFilter = async({
 
 const STREAM_TYPE_VIDEO = 'video';
 const COLORSPACE_RGBA = 'rgba';
+const MAX_FILTERED_FRAME_COUNT = 20;
 
 /**
  * A simple extractor that uses beamcoder to extract frames from a video file.
@@ -293,26 +294,20 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             this.#frames = [];
         }
 
-        // the decoder has been previously flushed while retrieving frames at the end of the stream and has thus been
-        // destroyed. See if the requested targetPTS is part of the last few frames we decoded. If so, return it.
-        if (!this.#decoder) {
-            VERBOSE && console.log('no decoder');
-            if ((this.#filteredFrames as any).length > 0) {
-                const closestFrame = (this.#filteredFrames as any).find(f => f.pts <= targetPTS);
-                // we should probably check the delta between the targetPTS and the closestFrame. If it's too big, we
-                // should return null or something.
-                VERBOSE && console.log('returning closest frame with pts', closestFrame.pts);
-                VERBOSE && console.log('read', packetReadCount, 'packets');
-                this.#previousTargetPTS = targetPTS;
-                return closestFrame;
-            }
-            throw Error('Unexpected condition: no decoder and no frames');
-        }
-
         // Read packets until we have a frame which is closest to targetPTS
         let filteredFrames = null;
         let closestFramePTS = -1;
         let outputFrame = null;
+
+        if ((this.#filteredFrames as any).length > 0) {
+            const closestFrame = (this.#filteredFrames as any).find(f => f.pts <= targetPTS);
+            VERBOSE && console.log('returning closest frame with pts', closestFrame?.pts);
+            VERBOSE && console.log('read', packetReadCount, 'packets');
+            if (closestFrame) {
+                closestFramePTS = closestFrame.pts;
+                outputFrame = closestFrame;
+            }
+        }
 
         // This is the first time we're decoding frames. Get the first packet and decode it.
         if (!this.#packet && this.#frames.length === 0) {
@@ -337,7 +332,10 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
                 if (!closestFrame) {
                     return outputFrame;
                 }
-                this.#filteredFrames = filteredFrames as beamcoder.DecodedFrames;
+                this.#filteredFrames = filteredFrames.concat(this.#filteredFrames);
+                while ((this.#filteredFrames as any).length > MAX_FILTERED_FRAME_COUNT) {
+                    (this.#filteredFrames as any).pop();
+                }
 
                 closestFramePTS = closestFrame?.pts;
                 VERBOSE && console.log('closestFramePTS', closestFramePTS, 'targetPTS', targetPTS);
