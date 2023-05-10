@@ -90,6 +90,73 @@ describe('FrameFusion', () => {
         await extractor.dispose();
     });
 
+    it('can get the same frame multiple times', async() => {
+        // When smaller increments are requested, the same frame can be returned multiple times. This happens when the
+        // caller plays the video at a lower playback rate than the source video.
+
+        // Arrange
+        const extractor = await BeamcoderExtractor.create({
+            inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4',
+        });
+        const times = [
+            1.6,
+            1.623077,
+            1.646154,
+            1.669231,
+            1.692308,
+            1.715384,
+            1.738462,
+            1.761538,
+            1.784615,
+            1.807693,
+            1.830769,
+            1.853846,
+            1.876923,
+        ];
+
+        for (let i = 0; i < times.length; i++) {
+            const imageData = await extractor.getImageDataAtTime(times[i]); // 3
+            if (!imageData) {
+                throw new Error(`Failed to get image data for time ${times[i]}`);
+            }
+            const canvas = createCanvas(imageData.width, imageData.height);
+            const ctx = canvas.getContext('2d');
+            ctx.putImageData(imageData, 0, 0);
+            expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
+        }
+
+        // Cleanup
+        await extractor.dispose();
+    });
+
+    it('can get the last frame multiple times', async() => {
+        // Arrange
+        const extractor = await BeamcoderExtractor.create({
+            inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4',
+        });
+        const times = [
+            1.98,
+            1.99,
+            2.0,
+            2.01,
+            2.02,
+        ];
+
+        for (let i = 0; i < times.length; i++) {
+            const imageData = await extractor.getImageDataAtTime(times[i]); // 3
+            if (!imageData) {
+                throw new Error(`Failed to get image data for time ${times[i]}`);
+            }
+            const canvas = createCanvas(imageData.width, imageData.height);
+            const ctx = canvas.getContext('2d');
+            ctx.putImageData(imageData, 0, 0);
+            expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
+        }
+
+        // Cleanup
+        await extractor.dispose();
+    });
+
     it('can get all frames', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
