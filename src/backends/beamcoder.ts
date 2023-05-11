@@ -282,7 +282,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         // seek and create a decoder when retrieving a frame for the first time or when seeking backwards
         // we have to create a new decoder when seeking backwards as the decoder can only process frames in
         // chronological order.
-        if (!this.#previousTargetPTS || this.#previousTargetPTS > targetPTS) {
+        if (this.#previousTargetPTS === null || this.#previousTargetPTS > targetPTS) {
             await this.#demuxer.seek({
                 stream_index: 0, // even though we specify the stream index, it still seeks all streams
                 timestamp: targetPTS,
