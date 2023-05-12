@@ -12,7 +12,7 @@ import { BaseExtractor } from '../BaseExtractor';
 import type { Extractor, ExtractorArgs, InterpolateMode } from '../../framefusion';
 import { DownloadVideoURL } from '../DownloadVideoURL';
 
-const VERBOSE = false;
+const VERBOSE = true;
 
 const createDecoder = ({
     demuxer,
@@ -317,6 +317,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
                 closestFramePTS = (closestFrame as Frame).pts;
                 outputFrame = closestFrame;
                 this.#previousTargetPTS = targetPTS;
+                return outputFrame;
             }
         }
 
