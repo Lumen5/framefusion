@@ -152,6 +152,8 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      */
     #streamIndex = 0;
 
+    #packetReadCount = 0;
+
     /**
      * Encoder/Decoder construction is async, so it can't be put in a regular constructor.
      * Use and await this method to generate an extractor.
@@ -272,12 +274,16 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         return pts * time_base[0] / time_base[1];
     }
 
+    get packetReadCount() {
+        return this.#packetReadCount;
+    }
+
     /**
      * Get the frame at the given presentation timestamp (PTS)
      */
     async _getFrameAtPts(targetPTS: number) {
         VERBOSE && console.log('_getFrameAtPts', targetPTS, '-> duration', this.duration);
-        let packetReadCount = 0;
+        this.#packetReadCount = 0;
 
         // seek and create a decoder when retrieving a frame for the first time or when seeking backwards
         // we have to create a new decoder when seeking backwards as the decoder can only process frames in
@@ -306,13 +312,14 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
                 VERBOSE && console.log('returning previously filtered frame with pts', (closestFrame as Frame).pts);
                 closestFramePTS = (closestFrame as Frame).pts;
                 outputFrame = closestFrame;
+                this.#previousTargetPTS = targetPTS;
             }
         }
 
         // This is the first time we're decoding frames. Get the first packet and decode it.
         if (!this.#packet && this.#frames.length === 0) {
             ({ packet: this.#packet, frames: this.#frames } = await this._getNextPacketAndDecodeFrames());
-            packetReadCount++;
+            this.#packetReadCount++;
         }
         // Read packets until we have a frame which is closest to targetPTS
         while ((this.#packet || this.#frames.length !== 0) && closestFramePTS < targetPTS) {
@@ -360,13 +367,13 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             ({ packet: this.#packet, frames: this.#frames } = await this._getNextPacketAndDecodeFrames());
 
             // keep track of how many packets we've read
-            packetReadCount++;
+            this.#packetReadCount++;
         }
 
         if (!outputFrame) {
             throw Error('No matching frame found');
         }
-        VERBOSE && console.log('read', packetReadCount, 'packets');
+        VERBOSE && console.log('read', this.packetReadCount, 'packets');
 
         this.#previousTargetPTS = targetPTS;
         return outputFrame;
