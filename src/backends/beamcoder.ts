@@ -292,7 +292,18 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         // seek and create a decoder when retrieving a frame for the first time or when seeking backwards
         // we have to create a new decoder when seeking backwards as the decoder can only process frames in
         // chronological order.
-        if (this.#previousTargetPTS === null || this.#previousTargetPTS > targetPTS) {
+        // RE_SEEK_DELTA: sometimes, we are looking for a frame so far ahead that it's better to drop everything and seek.
+        // Example: when we got a frame a 0 and request a frame at t = 30s just after, we don't want to start reading all packets
+        // until 30s.
+        const RE_SEEK_THRESHOLD = 3; // 3 seconds - typically we have keyframes at shorter intervals
+        const timeDifference = this.ptsToTime(Math.abs(targetPTS - (this.#packet?.pts || 0)));
+
+        VERBOSE && console.log(`timeDifference: ${timeDifference}, targetPTS: ${targetPTS}, last packet pts: ${this.#packet?.pts}`);
+
+        if (this.#previousTargetPTS === null ||
+            this.#previousTargetPTS > targetPTS ||
+            timeDifference > RE_SEEK_THRESHOLD) {
+            VERBOSE && console.log(`Seeking to ${targetPTS}`);
             await this.#demuxer.seek({
                 stream_index: 0, // even though we specify the stream index, it still seeks all streams
                 timestamp: targetPTS,
@@ -301,6 +312,8 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             await this.#createDecoder();
             this.#packet = null;
             this.#frames = [];
+            this.#previousTargetPTS = targetPTS;
+            this.#filteredFramesPacket = [];
         }
 
         let filteredFrames = null;
@@ -321,9 +334,8 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
                 VERBOSE && console.log('returning previously filtered frame with pts', (closestFrame as Frame).pts);
                 closestFramePTS = (closestFrame as Frame).pts;
                 outputFrame = closestFrame;
-                this.#previousTargetPTS = targetPTS;
 
-                if (nextFrame && nextFrame.pts > targetPTS) {
+                if ((nextFrame && nextFrame.pts > targetPTS) || (closestFramePTS === targetPTS)) {
                     // We have a next frame, so we know the frame being displayed at targetPTS is the previous one,
                     // which corresponds to outputFrame.
                     return outputFrame;
@@ -390,7 +402,6 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         }
         VERBOSE && console.log('read', this.packetReadCount, 'packets');
 
-        this.#previousTargetPTS = targetPTS;
         return outputFrame;
     }
 
