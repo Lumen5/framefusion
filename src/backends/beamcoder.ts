@@ -12,7 +12,7 @@ import { BaseExtractor } from '../BaseExtractor';
 import type { Extractor, ExtractorArgs, InterpolateMode } from '../../framefusion';
 import { DownloadVideoURL } from '../DownloadVideoURL';
 
-const VERBOSE = true;
+const VERBOSE = false;
 
 const createDecoder = ({
     demuxer,
