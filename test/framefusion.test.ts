@@ -89,7 +89,31 @@ describe('FrameFusion', () => {
                 expect(extractor.packetReadCount).to.equal(1);
             }
         }
+
+        // Cleanup
+        await extractor.dispose();
     });
+
+    it('Only reads a few packets when getting frames which are far apart', async() => {
+        // Arrange
+        const extractor = await BeamcoderExtractor.create({
+            inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-video/mvc-4k-new-orleans-a053c0340725rv-112014WA74Rf.mp4',
+        });
+
+        // Act & assert
+        await extractor.getFrameAtTime(0);
+        expect(extractor.packetReadCount).to.be.below(15);
+
+        await extractor.getFrameAtTime(20);
+        expect(extractor.packetReadCount).to.be.below(15);
+
+        await extractor.getFrameAtTime(0);
+        expect(extractor.packetReadCount).to.be.below(15);
+
+        // Cleanup
+        await extractor.dispose();
+    });
+
 
     it('can identify video stream index', async() => {
         // Arrange
