@@ -152,6 +152,10 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      */
     #streamIndex = 0;
 
+    /**
+     * The number of packets we've read from the demuxer to complete the frame query
+     * @private
+     */
     #packetReadCount = 0;
 
     /**
