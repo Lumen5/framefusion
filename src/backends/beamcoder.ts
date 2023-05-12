@@ -311,12 +311,23 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         if (this.#filteredFramesPacket.length > 0) {
             const closestFrame = this.#filteredFramesPacket
                 .flat()
-                .find(f => (f as Frame).pts <= targetPTS);
+                .find(f => (f as Frame).pts <= targetPTS) as Frame;
+
             if (closestFrame) {
+                const nextFrame = this.#filteredFramesPacket
+                    .flat()
+                    .find(f => (f as Frame).pts > closestFrame.pts) as Frame;
+
                 VERBOSE && console.log('returning previously filtered frame with pts', (closestFrame as Frame).pts);
                 closestFramePTS = (closestFrame as Frame).pts;
                 outputFrame = closestFrame;
                 this.#previousTargetPTS = targetPTS;
+
+                if (nextFrame && nextFrame.pts > targetPTS) {
+                    // We have a next frame, so we know the frame being displayed at targetPTS is the previous one,
+                    // which corresponds to outputFrame.
+                    return outputFrame;
+                }
             }
         }
 

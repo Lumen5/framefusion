@@ -1,6 +1,6 @@
 {
   "name": "@lumen5/framefusion",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "type": "module",
   "scripts": {
     "docs": "typedoc framefusion.ts",
