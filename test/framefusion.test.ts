@@ -73,6 +73,24 @@ describe('FrameFusion', () => {
         await extractor.dispose();
     });
 
+    it('only reads a few packets to get the next frame after a seek', async() => {
+        const extractor = await BeamcoderExtractor.create({
+            inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-video/mvc-4k-new-orleans-a053c0340725rv-112014WA74Rf.mp4',
+        });
+
+        const offset = 1.0 * FPS;
+        for (let i = offset; i < offset + 10; i++) {
+            const time = i / FPS + FRAME_SYNC_DELTA;
+            await extractor.getFrameAtTime(time);
+
+            // for the first frame query we have to find the closest PTS and read several packets to get the closest
+            // frame, after that we should only have to read a few packets
+            if (i > offset + 2) {
+                expect(extractor.packetReadCount).to.equal(1);
+            }
+        }
+    });
+
     it('can identify video stream index', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
