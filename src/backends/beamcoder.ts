@@ -338,6 +338,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
                 if ((nextFrame && nextFrame.pts > targetPTS) || (closestFramePTS === targetPTS)) {
                     // We have a next frame, so we know the frame being displayed at targetPTS is the previous one,
                     // which corresponds to outputFrame.
+                    this.#previousTargetPTS = targetPTS;
                     return outputFrame;
                 }
             }
@@ -380,6 +381,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
                 VERBOSE && console.log('closestFramePTS', closestFramePTS, 'targetPTS', targetPTS);
                 if (!outputFrame || closestFramePTS <= targetPTS) {
                     VERBOSE && console.log('assigning outputFrame', closestFrame?.pts);
+                    this.#previousTargetPTS = targetPTS;
                     outputFrame = closestFrame;
                 }
                 else {
