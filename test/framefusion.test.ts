@@ -235,6 +235,18 @@ describe('FrameFusion', () => {
         await extractor.dispose();
     });
 
+    it('can get frames when looping', async() => {
+        const extractor = await BeamcoderExtractor.create({
+            inputFileOrUrl: 'https://media-share.lumen5.com/proxy-url/?url=https%3A%2F%2Fmedia.tenor.com%2F37odVJNnxHEAAAPo%2Fdominos-dominos-pizza.mp4',
+        });
+
+        const times = [0.012667, 1.212667, 1.246, 0.012666];
+        for (let i = 0; i < times.length; i++) {
+            const frame = await extractor.getFrameAtTime(times[i]);
+            expect(Math.floor(extractor.ptsToTime(frame.pts))).to.equal(Math.floor(times[i]));
+        }
+    });
+
     it('can get the first 10 frames', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
