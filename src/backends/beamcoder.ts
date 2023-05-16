@@ -94,7 +94,7 @@ const createFilter = async({
 
 const STREAM_TYPE_VIDEO = 'video';
 const COLORSPACE_RGBA = 'rgba';
-const MAX_RECURSION = 2;
+const MAX_RECURSION = 5;
 
 /**
  * A simple extractor that uses beamcoder to extract frames from a video file.
