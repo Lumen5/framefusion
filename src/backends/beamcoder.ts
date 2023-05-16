@@ -94,6 +94,7 @@ const createFilter = async({
 
 const STREAM_TYPE_VIDEO = 'video';
 const COLORSPACE_RGBA = 'rgba';
+const MAX_RECURSION = 2;
 
 /**
  * A simple extractor that uses beamcoder to extract frames from a video file.
@@ -159,6 +160,12 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     #packetReadCount = 0;
 
     /**
+     * The number of times we've recursively read packets from the demuxer to complete the frame query
+     * @private
+     */
+    #recursiveReadCount = 0;
+
+    /**
      * Encoder/Decoder construction is async, so it can't be put in a regular constructor.
      * Use and await this method to generate an extractor.
      */
@@ -210,11 +217,8 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      */
     get duration(): number {
         const time_base = this.#demuxer.streams[this.#streamIndex].time_base;
-        const durations = this.#demuxer.streams.map(
-            stream => stream.duration * time_base[0] / time_base[1]
-        );
-
-        return Math.max(...durations);
+        const duration = this.#demuxer.streams[this.#streamIndex].duration * time_base[0] / time_base[1];
+        return duration;
     }
 
     /**
@@ -285,8 +289,8 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     /**
      * Get the frame at the given presentation timestamp (PTS)
      */
-    async _getFrameAtPts(targetPTS: number) {
-        VERBOSE && console.log('_getFrameAtPts', targetPTS, '-> duration', this.duration);
+    async _getFrameAtPts(targetPTS: number, SeekPTSOffset = 0): Promise<beamcoder.Frame> {
+        VERBOSE && console.log('_getFrameAtPts', targetPTS, SeekPTSOffset, '-> duration', this.duration);
         this.#packetReadCount = 0;
 
         // seek and create a decoder when retrieving a frame for the first time or when seeking backwards
@@ -296,17 +300,16 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         // Example: when we got a frame a 0 and request a frame at t = 30s just after, we don't want to start reading all packets
         // until 30s.
         const RE_SEEK_THRESHOLD = 3; // 3 seconds - typically we have keyframes at shorter intervals
-        const timeDifference = this.ptsToTime(Math.abs(targetPTS - (this.#packet?.pts || 0)));
+        const hasFrameWithinThreshold = this.#filteredFramesPacket.flat().some(frame => {
+            return this.ptsToTime(Math.abs(targetPTS - (frame as Frame).pts)) < RE_SEEK_THRESHOLD;
+        });
+        VERBOSE && console.log('hasPreviousTargetPTS', this.#previousTargetPTS === null, 'targetPTS is smaller', this.#previousTargetPTS > targetPTS, 'has frame within threshold', hasFrameWithinThreshold);
+        if (this.#previousTargetPTS === null || this.#previousTargetPTS > targetPTS || !hasFrameWithinThreshold) {
+            VERBOSE && console.log(`Seeking to ${targetPTS - SeekPTSOffset}`);
 
-        VERBOSE && console.log(`timeDifference: ${timeDifference}, targetPTS: ${targetPTS}, last packet pts: ${this.#packet?.pts}`);
-
-        if (this.#previousTargetPTS === null ||
-            this.#previousTargetPTS > targetPTS ||
-            timeDifference > RE_SEEK_THRESHOLD) {
-            VERBOSE && console.log(`Seeking to ${targetPTS}`);
             await this.#demuxer.seek({
                 stream_index: 0, // even though we specify the stream index, it still seeks all streams
-                timestamp: targetPTS,
+                timestamp: targetPTS - SeekPTSOffset,
                 any: false,
             });
             await this.#createDecoder();
@@ -399,8 +402,20 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             this.#packetReadCount++;
         }
 
+        // we read through all the available packets and frames, but we still don't have a frame. This can happen
+        // when our targetPTS is to close to the end of the video. In this case, we'll try to seek further away from
+        // the end of the video and try again. We've set up a MAX_RECURSION to prevent an infinite loop.
         if (!outputFrame) {
-            throw Error('No matching frame found');
+            if (MAX_RECURSION < this.#recursiveReadCount) {
+                throw Error(`Unable to find frame`);
+            }
+            const TIME_OFFSET = 0.1; // time offset in seconds
+            const PTSOffset = this._timeToPTS(TIME_OFFSET);
+            this.#recursiveReadCount++;
+            outputFrame = await this._getFrameAtPts(targetPTS, SeekPTSOffset + PTSOffset);
+            if (outputFrame) {
+                this.#recursiveReadCount = 0;
+            }
         }
         VERBOSE && console.log('read', this.packetReadCount, 'packets');
 
@@ -440,6 +455,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         if (decodedFrames && decodedFrames.frames.length !== 0) {
             frames = decodedFrames.frames;
         }
+        VERBOSE && console.log(`returning ${frames.length} decoded frames`);
 
         return { packet, frames };
     }
