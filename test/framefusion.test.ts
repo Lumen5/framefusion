@@ -73,6 +73,19 @@ describe('FrameFusion', () => {
         await extractor.dispose();
     });
 
+    it('can get duration when audio stream is longer than video stream', async() => {
+        // Arrange
+        const extractor = await BeamcoderExtractor.create({
+            inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-video/fixed_tmpRjwSJC.mp4',
+        });
+
+        // Act
+        expect(extractor.duration).to.equal(12.92);
+
+        // Cleanup
+        await extractor.dispose();
+    });
+
     it('only reads a few packets to get the next frame after a seek', async() => {
         const extractor = await BeamcoderExtractor.create({
             inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-video/mvc-4k-new-orleans-a053c0340725rv-112014WA74Rf.mp4',
@@ -202,6 +215,41 @@ describe('FrameFusion', () => {
             const frame = await extractor.getFrameAtTime(i / FPS + FRAME_SYNC_DELTA);
             expect(Math.floor(extractor.ptsToTime(frame.pts) * 30)).to.be.closeTo(i, 15);
         }
+
+        // Cleanup
+        await extractor.dispose();
+    });
+
+    it('can get frame towards to end when decoder is flushed', async() => {
+        // Arrange
+        const extractor = await BeamcoderExtractor.create({
+            inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-video/fixed_tmpRjwSJC.mp4',
+        });
+
+        // Act
+        await extractor.getFrameAtTime(12.866667);
+        const frame = await extractor.getFrameAtTime(12.9);
+
+        // Assert
+        expect(frame).to.not.be.null;
+        expect(frame.pts).to.equal(321000);
+
+        // Cleanup
+        await extractor.dispose();
+    });
+
+    it('can get frame towards to end when no packets are available', async() => {
+        // Arrange
+        const extractor = await BeamcoderExtractor.create({
+            inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-video/fixed_tmpRjwSJC.mp4',
+        });
+
+        // Act
+        const frame = await extractor.getFrameAtTime(12.9);
+
+        // Assert
+        expect(frame).to.not.be.null;
+        expect(frame.pts).to.equal(321000);
 
         // Cleanup
         await extractor.dispose();
