@@ -213,12 +213,10 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     }
 
     /**
-     * Duration in seconds
+     * This is the duration of the first video stream in the file expressed in seconds.
      */
     get duration(): number {
-        const time_base = this.#demuxer.streams[this.#streamIndex].time_base;
-        const duration = this.#demuxer.streams[this.#streamIndex].duration * time_base[0] / time_base[1];
-        return duration;
+        return this.ptsToTime(this.#demuxer.streams[this.#streamIndex].duration);
     }
 
     /**
@@ -288,6 +286,10 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
 
     /**
      * Get the frame at the given presentation timestamp (PTS)
+     * @param targetPTS - the target presentation timestamp (PTS) we want to retrieve
+     * @param SeekPTSOffset - the offset to use when seeking to the targetPTS. This is used when we have trouble finding
+     * the targetPTS. We use it to further move away from the requested PTS to find a frame. The allows use to read
+     * additional packets and find a frame that is closer to the targetPTS.
      */
     async _getFrameAtPts(targetPTS: number, SeekPTSOffset = 0): Promise<beamcoder.Frame> {
         VERBOSE && console.log('_getFrameAtPts', targetPTS, SeekPTSOffset, '-> duration', this.duration);
@@ -309,7 +311,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
 
             await this.#demuxer.seek({
                 stream_index: 0, // even though we specify the stream index, it still seeks all streams
-                timestamp: targetPTS - SeekPTSOffset,
+                timestamp: targetPTS + SeekPTSOffset,
                 any: false,
             });
             await this.#createDecoder();
@@ -412,7 +414,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             const TIME_OFFSET = 0.1; // time offset in seconds
             const PTSOffset = this._timeToPTS(TIME_OFFSET);
             this.#recursiveReadCount++;
-            outputFrame = await this._getFrameAtPts(targetPTS, SeekPTSOffset + PTSOffset);
+            outputFrame = await this._getFrameAtPts(targetPTS, SeekPTSOffset - PTSOffset);
             if (outputFrame) {
                 this.#recursiveReadCount = 0;
             }
