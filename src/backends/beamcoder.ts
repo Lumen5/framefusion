@@ -407,7 +407,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         // the end of the video and try again. We've set up a MAX_RECURSION to prevent an infinite loop.
         if (!outputFrame) {
             if (MAX_RECURSION < this.#recursiveReadCount) {
-                throw Error(`Unable to find frame`);
+                throw Error('No matching frame found');
             }
             const TIME_OFFSET = 0.1; // time offset in seconds
             const PTSOffset = this._timeToPTS(TIME_OFFSET);
