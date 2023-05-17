@@ -1,6 +1,6 @@
 {
   "name": "@lumen5/framefusion",
-  "version": "0.0.23",
+  "version": "0.0.24",
   "type": "module",
   "scripts": {
     "docs": "typedoc framefusion.ts",
@@ -20,21 +20,19 @@
   },
   "dependencies": {
     "@antoinemopa/beamcoder": "^0.7.4",
-    "canvas": "^2.11.2",
+    "canvas": "^2.9.1",
     "fs-extra": "^11.1.1",
-    "got": "^12.6.0",
-    "http-server": "^14.1.1",
-    "rollup-plugin-auto-external": "^2.0.0",
-    "tmp": "^0.2.1",
-    "tsconfig-paths": "^4.1.2"
+    "tmp": "^0.2.1"
   },
   "devDependencies": {
     "@types/chai": "^4.3.4",
     "@types/express": "^4.17.17",
+    "@types/fs-extra": "^11.0.1",
     "@types/http-server": "^0.12.1",
     "@types/mocha": "^10.0.1",
     "@types/node": "^18.14.6",
     "@types/sinon": "^10.0.13",
+    "@types/tmp": "^0.2.3",
     "@typescript-eslint/eslint-plugin": "^5.59.0",
     "@typescript-eslint/parser": "^5.59.0",
     "@vitest/ui": "^0.29.8",
@@ -46,9 +44,12 @@
     "eslint-plugin-standard": "^5.0.0",
     "eslint-plugin-vitest": "^0.1.4",
     "express": "^4.18.2",
+    "http-server": "^14.1.1",
     "jest-image-snapshot": "^6.1.0",
     "rimraf": "^4.4.1",
+    "rollup-plugin-auto-external": "^2.0.0",
     "sinon": "^15.0.3",
+    "tsconfig-paths": "^4.1.2",
     "typedoc": "^0.24.1",
     "typescript": "^4.9.5",
     "vite": "^4.1.0",

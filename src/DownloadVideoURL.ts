@@ -15,9 +15,9 @@ export class DownloadVideoURL {
     #url: string | undefined;
     #httpRequest: ClientRequest | undefined = undefined;
     #filepath: string | undefined = undefined;
-    #tmpObj: tmp.SynchrounousResult | undefined = undefined;
+    #tmpObj: tmp.FileResult | undefined = undefined;
 
-    constructor(url) {
+    constructor(url: string) {
         this.#url = url;
     }
 

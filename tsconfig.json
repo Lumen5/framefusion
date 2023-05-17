@@ -16,5 +16,6 @@
     "outDir": "dist",
     "sourceMap": true,
   },
-  "exclude": ["examples", "dist"]
+  "exclude": ["examples", "dist", "node_modules"],
+  "include": ["src/**/*"],
 }
