@@ -24,8 +24,8 @@ expect.extend({ toMatchImageSnapshot });
 const FPS = 30.0;
 const TEST_SERVER_PORT = 4242;
 const TEST_VIDEO = './test/samples/bbb10m.mp4';
+const TEST_VIDEO_COUNT_0_TO_179 = './test/samples/count0To179.mp4';
 const TEST_VIDEO_LOW_FRAMERATE = './test/samples/bbb-low-fps.mp4';
-const FRAME_SYNC_DELTA = (1 / FPS) / 2.0;
 
 describe('FrameFusion', () => {
     let server;
@@ -93,7 +93,7 @@ describe('FrameFusion', () => {
 
         const offset = 1.0 * FPS;
         for (let i = offset; i < offset + 10; i++) {
-            const time = i / FPS + FRAME_SYNC_DELTA;
+            const time = i / FPS;
             await extractor.getFrameAtTime(time);
 
             // for the first frame query we have to find the closest PTS and read several packets to get the closest
@@ -137,7 +137,7 @@ describe('FrameFusion', () => {
 
         // Act and Assert
         for (let i = 0; i < 10; i++) {
-            const frame = await extractor.getFrameAtTime(i / FPS + FRAME_SYNC_DELTA);
+            const frame = await extractor.getFrameAtTime(i / FPS);
             expect(Math.floor(extractor.ptsToTime(frame.pts) * FPS)).to.equal(i);
         }
 
@@ -220,7 +220,7 @@ describe('FrameFusion', () => {
 
         // Act & assert
         for (let i = 0; i < 60; i++) {
-            const frame = await extractor.getFrameAtTime(i / FPS + FRAME_SYNC_DELTA);
+            const frame = await extractor.getFrameAtTime(i / FPS);
             expect(Math.floor(extractor.ptsToTime(frame.pts) * FPS)).to.equal(i);
         }
 
@@ -236,7 +236,7 @@ describe('FrameFusion', () => {
 
         // Act & assert
         for (let i = 0; i < 5; i++) {
-            const frame = await extractor.getFrameAtTime(i / FPS + FRAME_SYNC_DELTA);
+            const frame = await extractor.getFrameAtTime(i / FPS);
             expect(Math.floor(extractor.ptsToTime(frame.pts) * 30)).to.be.closeTo(i, 15);
         }
 
@@ -328,7 +328,7 @@ describe('FrameFusion', () => {
         // Act & assert
         // ensure we render the 2nd frame properly - if we read the next packet we'll draw 3 instead of 2
         for (let i = 0; i < 10; i++) {
-            const time = i / FPS + FRAME_SYNC_DELTA;
+            const time = i / FPS;
             const imageData = await extractor.getImageDataAtTime(time);
             if (!imageData) {
                 continue;
@@ -354,7 +354,37 @@ describe('FrameFusion', () => {
         // Act & assert
         // ensure we render the last few frames properly - we have to flush the decoder to get the last few frames
         for (let i = 20; i < 30; i++) {
-            const time = i / FPS + FRAME_SYNC_DELTA;
+            const time = i / FPS;
+            const imageData = await extractor.getImageDataAtTime(time);
+            if (!imageData) {
+                continue;
+            }
+            const canvas = createCanvas(imageData.width, imageData.height);
+            const ctx = canvas.getContext('2d');
+            ctx.putImageData(imageData, 0, 0);
+            expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
+        }
+
+        // Cleanup
+        await extractor.dispose();
+    });
+
+    it('should accurately generate frames when seeking to time that aligns with frame boundaries.', async() => {
+        // Arrange
+
+        // ffprobe -show_frames test/samples/count0To179.mp4 | grep pts
+        // pts=30720
+        // pts_time=2.000000
+        // pts=31232
+        // pts_time=2.033333
+        // pts=31744
+        // pts_time=2.066667
+        // it should return 60, 61, 62 frames
+        const extractor = await BeamcoderExtractor.create({
+            inputFileOrUrl: TEST_VIDEO_COUNT_0_TO_179,
+        });
+        // Act & assert
+        for (const time of [2.0, 2.033333, 2.066667]) {
             const imageData = await extractor.getImageDataAtTime(time);
             if (!imageData) {
                 continue;
@@ -380,7 +410,7 @@ describe('FrameFusion', () => {
         // Act & assert
         // ensure we render the last few frames properly - we have to flush the decoder to get the last few frames
         for (let i = 50; i < 60; i++) {
-            const time = i / FPS + FRAME_SYNC_DELTA;
+            const time = i / FPS;
             const imageData = await extractor.getImageDataAtTime(time);
             if (!imageData) {
                 continue;
@@ -410,7 +440,7 @@ describe('FrameFusion', () => {
             // Act & assert
             const start = Date.now();
             for (let i = 0; i < 60; i++) {
-                const time = i / FPS + FRAME_SYNC_DELTA;
+                const time = i / FPS;
                 await extractor.getFrameAtTime(time);
             }
             const end = Date.now();

@@ -239,7 +239,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      */
     async getFrameAtTime(targetTime: number): Promise<beamcoder.Frame> {
         VERBOSE && console.log(`getFrameAtTime time(s)=${targetTime}`);
-        const targetPts = Math.floor(this._timeToPTS(targetTime));
+        const targetPts = Math.round(this._timeToPTS(targetTime));
         return this._getFrameAtPts(targetPts);
     }
 
@@ -248,7 +248,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      * @param targetTime
      */
     async getImageDataAtTime(targetTime: number): Promise<ImageData> {
-        const targetPts = Math.floor(this._timeToPTS(targetTime));
+        const targetPts = Math.round(this._timeToPTS(targetTime));
         VERBOSE && console.log('targetTime', targetTime, '-> targetPts', targetPts);
         const frame = await this._getFrameAtPts(targetPts);
         if (!frame) {
