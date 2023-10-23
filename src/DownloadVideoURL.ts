@@ -62,11 +62,6 @@ export class DownloadVideoURL {
                     }
                     reject(e);
                 });
-
-                this.#httpRequest.on('timeout', () => {
-                    this.#httpRequest.destroy();
-                    reject(new Error(`Request to ${source} timed out`));
-                });
             }
             catch (e) {
                 reject(e);
