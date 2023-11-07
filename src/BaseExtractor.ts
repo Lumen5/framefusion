@@ -1,4 +1,4 @@
-import type { ImageData } from 'canvas';
+import type { ImageData } from '@napi-rs/canvas';
 
 import type {
     ExtractorArgs,

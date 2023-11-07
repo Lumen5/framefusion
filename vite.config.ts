@@ -22,7 +22,11 @@ export default defineConfig({
             formats: ['es', 'cjs'],
         },
         rollupOptions: {
-            external: ['node:https'],
+            external: [
+                'node:https',
+                '@napi-rs/canvas',
+                /@napi\-rs\/canvas.*/
+            ],
         },
         sourcemap: true,
     },

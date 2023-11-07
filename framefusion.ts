@@ -1,4 +1,4 @@
-import type { ImageData } from 'canvas';
+import type { ImageData } from '@napi-rs/canvas';
 import { BeamcoderExtractor } from './src/backends/beamcoder.js';
 
 export type Frame = {
