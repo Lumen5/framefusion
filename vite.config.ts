@@ -25,7 +25,7 @@ export default defineConfig({
             external: [
                 'node:https',
                 '@napi-rs/canvas',
-                /@napi\-rs\/canvas.*/
+                /@napi-rs\/canvas.*/,
             ],
         },
         sourcemap: true,
