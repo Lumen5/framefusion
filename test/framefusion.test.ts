@@ -6,7 +6,7 @@ import {
     beforeAll
 } from 'vitest';
 import { toMatchImageSnapshot } from 'jest-image-snapshot';
-import { createCanvas } from 'canvas';
+import { createCanvas } from '@napi-rs/canvas';
 import httpServer from 'http-server';
 import { BeamcoderExtractor } from '../src/backends/beamcoder';
 

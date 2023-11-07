@@ -6,8 +6,7 @@ import type {
     Frame
 } from '@antoinemopa/beamcoder';
 import beamcoder from '@antoinemopa/beamcoder';
-import type { ImageData } from 'canvas';
-import { createImageData } from 'canvas';
+import { ImageData } from '@napi-rs/canvas';
 import { BaseExtractor } from '../BaseExtractor';
 import type { Extractor, ExtractorArgs, InterpolateMode } from '../../framefusion';
 import { DownloadVideoURL } from '../DownloadVideoURL';
@@ -256,11 +255,8 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             return null;
         }
         const rawData = this._resizeFrameData(frame);
-        const image = createImageData(
-            rawData,
-            frame.width,
-            frame.height
-        ) as ImageData;
+        const image = new ImageData(frame.width, frame.height);
+        image.data.set(rawData);
         return image;
     }
 
