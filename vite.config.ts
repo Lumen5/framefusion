@@ -22,7 +22,10 @@ export default defineConfig({
             formats: ['es', 'cjs'],
         },
         rollupOptions: {
-            external: ['node:https'],
+            external: [
+                'node:https',
+                'skia-canvas',
+            ],
         },
         sourcemap: true,
     },

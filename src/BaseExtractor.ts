@@ -1,4 +1,4 @@
-import type { ImageData } from 'canvas';
+import type { ImageData } from 'skia-canvas';
 
 import type {
     ExtractorArgs,
