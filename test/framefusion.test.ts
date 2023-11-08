@@ -6,9 +6,13 @@ import {
     beforeAll
 } from 'vitest';
 import { toMatchImageSnapshot } from 'jest-image-snapshot';
-import { createCanvas } from '@napi-rs/canvas';
+import { Canvas } from 'skia-canvas';
 import httpServer from 'http-server';
 import { BeamcoderExtractor } from '../src/backends/beamcoder';
+
+const createCanvas = (width, height) => {
+    return new Canvas(width, height);
+};
 
 declare global {
     // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -177,7 +181,7 @@ describe('FrameFusion', () => {
             const canvas = createCanvas(imageData.width, imageData.height);
             const ctx = canvas.getContext('2d');
             ctx.putImageData(imageData, 0, 0);
-            expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
+            expect(await canvas.toBuffer('png')).toMatchImageSnapshot();
         }
 
         // Cleanup
@@ -205,7 +209,7 @@ describe('FrameFusion', () => {
             const canvas = createCanvas(imageData.width, imageData.height);
             const ctx = canvas.getContext('2d');
             ctx.putImageData(imageData, 0, 0);
-            expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
+            expect(await canvas.toBuffer('png')).toMatchImageSnapshot();
         }
 
         // Cleanup
@@ -300,7 +304,7 @@ describe('FrameFusion', () => {
             const canvas = createCanvas(imageData.width, imageData.height);
             const ctx = canvas.getContext('2d');
             ctx.putImageData(imageData, 0, 0);
-            expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
+            expect(await canvas.toBuffer('png')).toMatchImageSnapshot();
         }
 
         // Cleanup
@@ -336,7 +340,7 @@ describe('FrameFusion', () => {
             const canvas = createCanvas(imageData.width, imageData.height);
             const ctx = canvas.getContext('2d');
             ctx.putImageData(imageData, 0, 0);
-            expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
+            expect(await canvas.toBuffer('png')).toMatchImageSnapshot();
         }
 
         // Cleanup
@@ -362,7 +366,7 @@ describe('FrameFusion', () => {
             const canvas = createCanvas(imageData.width, imageData.height);
             const ctx = canvas.getContext('2d');
             ctx.putImageData(imageData, 0, 0);
-            expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
+            expect(await canvas.toBuffer('png')).toMatchImageSnapshot();
         }
 
         // Cleanup
@@ -392,7 +396,7 @@ describe('FrameFusion', () => {
             const canvas = createCanvas(imageData.width, imageData.height);
             const ctx = canvas.getContext('2d');
             ctx.putImageData(imageData, 0, 0);
-            expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
+            expect(await canvas.toBuffer('png')).toMatchImageSnapshot();
         }
 
         // Cleanup
@@ -418,7 +422,7 @@ describe('FrameFusion', () => {
             const canvas = createCanvas(imageData.width, imageData.height);
             const ctx = canvas.getContext('2d');
             ctx.putImageData(imageData, 0, 0);
-            expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
+            expect(await canvas.toBuffer('png')).toMatchImageSnapshot();
         }
 
         // Cleanup

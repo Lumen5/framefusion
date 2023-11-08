@@ -1,4 +1,4 @@
-import type { ImageData } from '@napi-rs/canvas';
+import type { ImageData } from 'skia-canvas';
 
 import type {
     ExtractorArgs,

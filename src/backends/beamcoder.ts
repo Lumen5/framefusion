@@ -6,7 +6,7 @@ import type {
     Frame
 } from '@antoinemopa/beamcoder';
 import beamcoder from '@antoinemopa/beamcoder';
-import { ImageData } from '@napi-rs/canvas';
+import { ImageData } from 'skia-canvas';
 import { BaseExtractor } from '../BaseExtractor';
 import type { Extractor, ExtractorArgs, InterpolateMode } from '../../framefusion';
 import { DownloadVideoURL } from '../DownloadVideoURL';

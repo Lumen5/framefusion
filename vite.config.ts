@@ -24,8 +24,7 @@ export default defineConfig({
         rollupOptions: {
             external: [
                 'node:https',
-                '@napi-rs/canvas',
-                /@napi-rs\/canvas.*/,
+                'skia-canvas',
             ],
         },
         sourcemap: true,
