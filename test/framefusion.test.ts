@@ -6,7 +6,7 @@ import {
     beforeAll
 } from 'vitest';
 import { toMatchImageSnapshot } from 'jest-image-snapshot';
-import { createCanvas } from 'canvas';
+import { createCanvas, createImageData } from 'canvas';
 import httpServer from 'http-server';
 import { BeamcoderExtractor } from '../src/backends/beamcoder';
 
@@ -389,9 +389,10 @@ describe('FrameFusion', () => {
             if (!imageData) {
                 continue;
             }
+            const canvasImageData = createImageData(imageData.data, imageData.width, imageData.height);
             const canvas = createCanvas(imageData.width, imageData.height);
             const ctx = canvas.getContext('2d');
-            ctx.putImageData(imageData, 0, 0);
+            ctx.putImageData(canvasImageData, 0, 0);
             expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
         }
 
