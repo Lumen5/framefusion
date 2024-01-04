@@ -1,4 +1,4 @@
-import type { ImageData } from 'canvas';
+import type { ImageData } from './src/types';
 import { BeamcoderExtractor } from './src/backends/beamcoder.js';
 
 export type Frame = {

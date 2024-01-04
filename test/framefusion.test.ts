@@ -6,7 +6,7 @@ import {
     beforeAll
 } from 'vitest';
 import { toMatchImageSnapshot } from 'jest-image-snapshot';
-import { createCanvas } from 'canvas';
+import { createCanvas, createImageData } from 'canvas';
 import httpServer from 'http-server';
 import { BeamcoderExtractor } from '../src/backends/beamcoder';
 
@@ -171,12 +171,13 @@ describe('FrameFusion', () => {
 
         for (let i = 0; i < times.length; i++) {
             const imageData = await extractor.getImageDataAtTime(times[i]); // 3
+            const canvasImageData = createImageData(imageData.data, imageData.width, imageData.height);
             if (!imageData) {
                 throw new Error(`Failed to get image data for time ${times[i]}`);
             }
             const canvas = createCanvas(imageData.width, imageData.height);
             const ctx = canvas.getContext('2d');
-            ctx.putImageData(imageData, 0, 0);
+            ctx.putImageData(canvasImageData, 0, 0);
             expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
         }
 
@@ -202,9 +203,10 @@ describe('FrameFusion', () => {
             if (!imageData) {
                 throw new Error(`Failed to get image data for time ${times[i]}`);
             }
+            const canvasImageData = createImageData(imageData.data, imageData.width, imageData.height);
             const canvas = createCanvas(imageData.width, imageData.height);
             const ctx = canvas.getContext('2d');
-            ctx.putImageData(imageData, 0, 0);
+            ctx.putImageData(canvasImageData, 0, 0);
             expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
         }
 
@@ -297,9 +299,10 @@ describe('FrameFusion', () => {
             if (!imageData) {
                 continue;
             }
+            const canvasImageData = createImageData(imageData.data, imageData.width, imageData.height);
             const canvas = createCanvas(imageData.width, imageData.height);
             const ctx = canvas.getContext('2d');
-            ctx.putImageData(imageData, 0, 0);
+            ctx.putImageData(canvasImageData, 0, 0);
             expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
         }
 
@@ -333,9 +336,10 @@ describe('FrameFusion', () => {
             if (!imageData) {
                 continue;
             }
+            const canvasImageData = createImageData(imageData.data, imageData.width, imageData.height);
             const canvas = createCanvas(imageData.width, imageData.height);
             const ctx = canvas.getContext('2d');
-            ctx.putImageData(imageData, 0, 0);
+            ctx.putImageData(canvasImageData, 0, 0);
             expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
         }
 
@@ -359,9 +363,10 @@ describe('FrameFusion', () => {
             if (!imageData) {
                 continue;
             }
+            const canvasImageData = createImageData(imageData.data, imageData.width, imageData.height);
             const canvas = createCanvas(imageData.width, imageData.height);
             const ctx = canvas.getContext('2d');
-            ctx.putImageData(imageData, 0, 0);
+            ctx.putImageData(canvasImageData, 0, 0);
             expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
         }
 
@@ -389,9 +394,10 @@ describe('FrameFusion', () => {
             if (!imageData) {
                 continue;
             }
+            const canvasImageData = createImageData(imageData.data, imageData.width, imageData.height);
             const canvas = createCanvas(imageData.width, imageData.height);
             const ctx = canvas.getContext('2d');
-            ctx.putImageData(imageData, 0, 0);
+            ctx.putImageData(canvasImageData, 0, 0);
             expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
         }
 
@@ -415,9 +421,10 @@ describe('FrameFusion', () => {
             if (!imageData) {
                 continue;
             }
+            const canvasImageData = createImageData(imageData.data, imageData.width, imageData.height);
             const canvas = createCanvas(imageData.width, imageData.height);
             const ctx = canvas.getContext('2d');
-            ctx.putImageData(imageData, 0, 0);
+            ctx.putImageData(canvasImageData, 0, 0);
             expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
         }
 
