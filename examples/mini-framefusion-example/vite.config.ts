@@ -18,7 +18,6 @@ export default defineConfig({
                 'path',
                 'fs',
                 '@pixi/node',
-                'canvas',
                 'framefusion',
                 'child_process',
                 'rimraf',

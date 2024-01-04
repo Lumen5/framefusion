@@ -1,10 +1,10 @@
-import type { ImageData } from 'canvas';
-
 import type {
     ExtractorArgs,
     Frame,
     Extractor
 } from '../framefusion';
+import type { ImageData } from './types';
+
 
 export class BaseExtractor implements Extractor {
     static async create(args: ExtractorArgs): Promise<Extractor> {
