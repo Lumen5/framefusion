@@ -4,8 +4,8 @@ import type {
     Decoder,
     Filterer,
     Frame
-} from '@antoinemopa/beamcoder';
-import beamcoder from '@antoinemopa/beamcoder';
+} from '@lumen5/beamcoder';
+import beamcoder from '@lumen5/beamcoder';
 import type { ImageData } from '../types';
 import { BaseExtractor } from '../BaseExtractor';
 import type { Extractor, ExtractorArgs, InterpolateMode } from '../../framefusion';
