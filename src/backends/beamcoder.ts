@@ -484,14 +484,23 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     }
 
     _setFrameDataToImageData(frame: beamcoder.Frame, target: Uint8ClampedArray) {
+        const components = 4; // 4 components: r, g, b and a
+        const sourceLineSize = frame.linesize as unknown as number;
         // frame.data can contain multiple "planes" in other colorspaces, but in rgba, there is just one "plane", so
         // our data is in frame.data[0]
         const pixels = frame.data[0] as Uint8Array;
 
-        // libav creates larger buffers by 16 bytes because it makes their internal code simpler.
-        // we have to trim a part at the end.
+        // libav creates larger buffers because it makes their internal code simpler.
+        // we have to trim a part at the right of each pixel row.
 
-        target.set(pixels.slice(0, target.length));
+        for (let i = 0; i < frame.height; i++) {
+            const sourceStart = i * sourceLineSize;
+            // console.log('sourceStart', sourceStart)
+            const sourceEnd = sourceStart + frame.width * components;
+            const sourceData = pixels.subarray(sourceStart, sourceEnd);
+            const targetOffset = i * frame.width * components;
+            target.set(sourceData, targetOffset);
+        }
     }
 
     async dispose() {
