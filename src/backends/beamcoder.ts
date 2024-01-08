@@ -491,7 +491,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         // libav creates larger buffers by 16 bytes because it makes their internal code simpler.
         // we have to trim a part at the end.
 
-        target.set(pixels.subarray(0, target.length));
+        target.set(pixels.slice(0, target.length));
     }
 
     async dispose() {
