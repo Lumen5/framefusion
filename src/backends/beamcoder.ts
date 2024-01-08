@@ -246,7 +246,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      * Get imageData for a given time in seconds
      * @param targetTime
      */
-    async getImageDataAtTime(targetTime: number): Promise<ImageData> {
+    async getImageDataAtTime(targetTime: number, target?: Uint8ClampedArray): Promise<ImageData> {
         const targetPts = Math.round(this._timeToPTS(targetTime));
         VERBOSE && console.log('targetTime', targetTime, '-> targetPts', targetPts);
         const frame = await this._getFrameAtPts(targetPts);
@@ -254,7 +254,14 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             VERBOSE && console.log('no frame found');
             return null;
         }
-        const rawData = this._resizeFrameData(frame);
+
+        let rawData = target;
+
+        if (!target) {
+            rawData = new Uint8ClampedArray(frame.width * frame.height * 4);
+        }
+
+        this._setFrameDataToImageData(frame, rawData);
 
         return {
             data: rawData,
@@ -476,25 +483,15 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         return packet as Packet;
     }
 
-    _resizeFrameData(frame): Uint8ClampedArray {
-        const components = 4; // 4 components: r, g, b and a
-        const size = frame.width * frame.height * components;
-        const rawData = new Uint8ClampedArray(size); // we should probably reuse this buffer
-        const sourceLineSize = frame.linesize as unknown as number;
+    _setFrameDataToImageData(frame: beamcoder.Frame, target: Uint8ClampedArray) {
         // frame.data can contain multiple "planes" in other colorspaces, but in rgba, there is just one "plane", so
         // our data is in frame.data[0]
         const pixels = frame.data[0] as Uint8Array;
 
-        // libav creates larger buffers because it makes their internal code simpler.
-        // we have to trim a part at the right of each pixel row.
-        for (let i = 0; i < frame.height; i++) {
-            const sourceStart = i * sourceLineSize;
-            const sourceEnd = sourceStart + frame.width * components;
-            const sourceData = pixels.slice(sourceStart, sourceEnd);
-            const targetOffset = i * frame.width * components;
-            rawData.set(sourceData, targetOffset);
-        }
-        return rawData;
+        // libav creates larger buffers by 16 bytes because it makes their internal code simpler.
+        // we have to trim a part at the end.
+
+        target.set(pixels.subarray(0, target.length));
     }
 
     async dispose() {
