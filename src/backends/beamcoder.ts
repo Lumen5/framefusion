@@ -13,6 +13,11 @@ import { DownloadVideoURL } from '../DownloadVideoURL';
 
 const VERBOSE = false;
 
+/**
+ * RGBA format need one byte for every components: r, g, b and a
+ */
+const RGBA_PIXEL_SIZE = 4;
+
 const createDecoder = ({
     demuxer,
     streamIndex,
@@ -258,7 +263,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         let rawData = target;
 
         if (!target) {
-            rawData = new Uint8ClampedArray(frame.width * frame.height * 4);
+            rawData = new Uint8ClampedArray(frame.width * frame.height * RGBA_PIXEL_SIZE);
         }
 
         this._setFrameDataToImageData(frame, rawData);
@@ -484,7 +489,6 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     }
 
     _setFrameDataToImageData(frame: beamcoder.Frame, target: Uint8ClampedArray) {
-        const components = 4; // 4 components: r, g, b and a
         const sourceLineSize = frame.linesize as unknown as number;
         // frame.data can contain multiple "planes" in other colorspaces, but in rgba, there is just one "plane", so
         // our data is in frame.data[0]
@@ -495,9 +499,9 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
 
         for (let i = 0; i < frame.height; i++) {
             const sourceStart = i * sourceLineSize;
-            const sourceEnd = sourceStart + frame.width * components;
+            const sourceEnd = sourceStart + frame.width * RGBA_PIXEL_SIZE;
             const sourceData = pixels.subarray(sourceStart, sourceEnd);
-            const targetOffset = i * frame.width * components;
+            const targetOffset = i * frame.width * RGBA_PIXEL_SIZE;
             target.set(sourceData, targetOffset);
         }
     }
