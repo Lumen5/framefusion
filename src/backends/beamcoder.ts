@@ -495,7 +495,6 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
 
         for (let i = 0; i < frame.height; i++) {
             const sourceStart = i * sourceLineSize;
-            // console.log('sourceStart', sourceStart)
             const sourceEnd = sourceStart + frame.width * components;
             const sourceData = pixels.subarray(sourceStart, sourceEnd);
             const targetOffset = i * frame.width * components;
