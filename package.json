@@ -1,6 +1,6 @@
 {
   "name": "@lumen5/framefusion",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "scripts": {
     "docs": "typedoc framefusion.ts",
@@ -19,7 +19,7 @@
     "test-in-docker": "docker build -t framefusion-test-image -f ./docker-images/ci.Dockerfile . && docker run -it framefusion-test-image"
   },
   "dependencies": {
-    "@lumen5/beamcoder": "^0.0.2",
+    "@lumen5/beamcoder": "^0.0.3",
     "fs-extra": "^11.1.1",
     "tmp": "^0.2.1"
   },
