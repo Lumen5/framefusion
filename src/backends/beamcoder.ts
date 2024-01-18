@@ -191,7 +191,11 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             inputFileOrUrl = downloadUrl.filepath;
             VERBOSE && console.log('finished downloading');
         }
-        this.#demuxer = await beamcoder.demuxer('file:' + inputFileOrUrl);
+        // Assume file url at this point
+        if (!inputFileOrUrl.startsWith('file:')) {
+            inputFileOrUrl = 'file:' + inputFileOrUrl;
+        }
+        this.#demuxer = await beamcoder.demuxer(inputFileOrUrl);
         this.#streamIndex = this.#demuxer.streams.findIndex(stream => stream.codecpar.codec_type === STREAM_TYPE_VIDEO);
         if (this.#streamIndex === -1) {
             throw new Error(`File has no ${STREAM_TYPE_VIDEO} stream!`);
