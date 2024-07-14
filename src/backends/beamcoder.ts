@@ -27,13 +27,24 @@ const createDecoder = ({
     streamIndex: number;
     threadCount: number;
 }): Decoder => {
-    return beamcoder.decoder({
-        demuxer: demuxer,
+    const commonParams = {
         width: demuxer.streams[streamIndex].codecpar.width,
         height: demuxer.streams[streamIndex].codecpar.height,
-        stream_index: streamIndex,
         pix_fmt: demuxer.streams[streamIndex].codecpar.format,
         thread_count: threadCount,
+    };
+
+    if (demuxer.streams[streamIndex].codecpar.name === 'vp8') {
+        return beamcoder.decoder({
+            ...commonParams,
+            name: 'libvpx',
+        });
+    }
+
+    return beamcoder.decoder({
+        ...commonParams,
+        demuxer: demuxer,
+        stream_index: streamIndex,
     });
 };
 
