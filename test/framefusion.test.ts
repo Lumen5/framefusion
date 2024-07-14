@@ -145,7 +145,7 @@ describe('FrameFusion', () => {
         await extractor.dispose();
     });
 
-    it.only('can get frame from webm with alpha', async() => {
+    it('can get frame from webm with alpha', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
             inputFileOrUrl: './test/samples/webm-with-alpha.webm',
