@@ -41,6 +41,13 @@ const createDecoder = ({
         });
     }
 
+    if (demuxer.streams[streamIndex].codecpar.name === 'vp9') {
+        return beamcoder.decoder({
+            ...commonParams,
+            name: 'libvpx-vp9',
+        });
+    }
+
     return beamcoder.decoder({
         ...commonParams,
         demuxer: demuxer,

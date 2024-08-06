@@ -145,10 +145,31 @@ describe('FrameFusion', () => {
         await extractor.dispose();
     });
 
-    it('can get frame from webm with alpha', async() => {
+    it('can get frame from vp8 encoded webm with alpha', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
-            inputFileOrUrl: './test/samples/webm-with-alpha.webm',
+            inputFileOrUrl: './test/samples/vp8-webm-with-alpha.webm',
+            threadCount: 8,
+        });
+
+        // Act and Assert
+        const imageData = await extractor.getImageDataAtTime(100);
+        const canvasImageData = createImageData(imageData.data, imageData.width, imageData.height);
+
+        const canvas = createCanvas(imageData.width, imageData.height);
+        const ctx = canvas.getContext('2d', { alpha: true });
+
+        ctx.putImageData(canvasImageData, 0, 0);
+        expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
+
+        // Cleanup
+        await extractor.dispose();
+    });
+
+    it('can get frame from vp9 encoded webm with alpha', async() => {
+        // Arrange
+        const extractor = await BeamcoderExtractor.create({
+            inputFileOrUrl: './test/samples/vp9-webm-with-alpha.webm',
             threadCount: 8,
         });
 
