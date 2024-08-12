@@ -215,6 +215,9 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         }
         this.#demuxer = await beamcoder.demuxer(inputFileOrUrl);
         this.#streamIndex = this.#demuxer.streams.findIndex(stream => stream.codecpar.codec_type === STREAM_TYPE_VIDEO);
+
+        console.log(this.#demuxer.streams.forEach(stream => console.log(stream.codecpar.codec_type)));
+
         if (this.#streamIndex === -1) {
             throw new Error(`File has no ${STREAM_TYPE_VIDEO} stream!`);
         }
@@ -325,7 +328,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      * additional packets and find a frame that is closer to the targetPTS.
      */
     async _getFrameAtPts(targetPTS: number, SeekPTSOffset = 0): Promise<beamcoder.Frame> {
-        VERBOSE && console.log('_getFrameAtPts', targetPTS, SeekPTSOffset, '-> duration', this.duration);
+        VERBOSE && console.log('_getFrameAtPts', targetPTS, 'seekPTSOffset', SeekPTSOffset, 'duration', this.duration);
         this.#packetReadCount = 0;
 
         // seek and create a decoder when retrieving a frame for the first time or when seeking backwards
@@ -338,9 +341,9 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         const hasFrameWithinThreshold = this.#filteredFramesPacket.flat().some(frame => {
             return this.ptsToTime(Math.abs(targetPTS - (frame as Frame).pts)) < RE_SEEK_THRESHOLD;
         });
-        VERBOSE && console.log('hasPreviousTargetPTS', this.#previousTargetPTS === null, 'targetPTS is smaller', this.#previousTargetPTS > targetPTS, 'has frame within threshold', hasFrameWithinThreshold);
+        VERBOSE && console.log('hasPreviousTargetPTS:', this.#previousTargetPTS === null, ', targetPTS is smaller:', this.#previousTargetPTS > targetPTS, ', has frame within threshold:', hasFrameWithinThreshold);
         if (this.#previousTargetPTS === null || this.#previousTargetPTS > targetPTS || !hasFrameWithinThreshold) {
-            VERBOSE && console.log(`Seeking to ${targetPTS - SeekPTSOffset}`);
+            VERBOSE && console.log(`Seeking to ${targetPTS + SeekPTSOffset}`);
 
             await this.#demuxer.seek({
                 stream_index: 0, // even though we specify the stream index, it still seeks all streams
@@ -390,19 +393,22 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         // Read packets until we have a frame which is closest to targetPTS
         while ((this.#packet || this.#frames.length !== 0) && closestFramePTS < targetPTS) {
             VERBOSE && console.log('packet si:', this.#packet?.stream_index, 'pts:', this.#packet?.pts, 'frames:', this.#frames?.length);
-            VERBOSE && console.log('frames', this.#frames?.length, 'frames.pts:', this.#frames?.map(f => f.pts), '-> target.pts:', targetPTS);
+            VERBOSE && console.log('frames', this.#frames?.length, 'frames.pts:', JSON.stringify(this.#frames?.map(f => f.pts)), '-> target.pts:', targetPTS);
 
             // packet contains frames
             if (this.#frames.length !== 0) {
                 // filter the frames
                 const filteredResult = await this.#filterer.filter([{ name: 'in0:v', frames: this.#frames }]);
                 filteredFrames = filteredResult.flatMap(r => r.frames);
-                VERBOSE && console.log('filteredFrames', filteredFrames.length, 'filteredFrames.pts:', filteredFrames.map(f => f.pts), '-> target.pts:', targetPTS);
+                VERBOSE && console.log('filteredFrames', filteredFrames.length, 'filteredFrames.pts:', JSON.stringify(filteredFrames.map(f => f.pts)), '-> target.pts:', targetPTS);
 
                 // get the closest frame to our target presentation timestamp (PTS)
                 // Beamcoder returns decoded packet frames as follows: [1000, 2000, 3000, 4000]
+                // If we're looking for a frame at 0, we want to return the frame at 1000
                 // If we're looking for a frame at 2500, we want to return the frame at 2000
-                const closestFrame = filteredFrames.reverse().find(f => f.pts <= targetPTS);
+                const closestFrame = (this.#packetReadCount === 1 && filteredFrames[0].pts > targetPTS)
+                    ? filteredFrames[0]
+                    : filteredFrames.reverse().find(f => f.pts <= targetPTS);
 
                 // The packet contains frames, but all of them have PTS larger than our a targetPTS (we looked too far)
                 if (!closestFrame) {
@@ -441,6 +447,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         // when our targetPTS is to close to the end of the video. In this case, we'll try to seek further away from
         // the end of the video and try again. We've set up a MAX_RECURSION to prevent an infinite loop.
         if (!outputFrame) {
+            console.log('here');
             if (MAX_RECURSION < this.#recursiveReadCount) {
                 throw Error('No matching frame found');
             }
