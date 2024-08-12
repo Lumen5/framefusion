@@ -195,7 +195,7 @@ describe('FrameFusion', () => {
         });
 
         // Act and Assert
-        const imageData = await extractor.getImageDataAtTime(0); // we can't get anything before 8
+        const imageData = await extractor.getImageDataAtTime(0);
         const canvasImageData = createImageData(imageData.data, imageData.width, imageData.height);
 
         const canvas = createCanvas(imageData.width, imageData.height);
@@ -439,7 +439,6 @@ describe('FrameFusion', () => {
 
     it('should accurately generate frames when seeking to time that aligns with frame boundaries.', async() => {
         // Arrange
-
         // ffprobe -show_frames test/samples/count0To179.mp4 | grep pts
         // pts=30720
         // pts_time=2.000000
