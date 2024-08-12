@@ -216,8 +216,6 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         this.#demuxer = await beamcoder.demuxer(inputFileOrUrl);
         this.#streamIndex = this.#demuxer.streams.findIndex(stream => stream.codecpar.codec_type === STREAM_TYPE_VIDEO);
 
-        console.log(this.#demuxer.streams.forEach(stream => console.log(stream.codecpar.codec_type)));
-
         if (this.#streamIndex === -1) {
             throw new Error(`File has no ${STREAM_TYPE_VIDEO} stream!`);
         }
@@ -447,7 +445,6 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         // when our targetPTS is to close to the end of the video. In this case, we'll try to seek further away from
         // the end of the video and try again. We've set up a MAX_RECURSION to prevent an infinite loop.
         if (!outputFrame) {
-            console.log('here');
             if (MAX_RECURSION < this.#recursiveReadCount) {
                 throw Error('No matching frame found');
             }
