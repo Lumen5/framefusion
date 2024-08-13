@@ -187,6 +187,27 @@ describe('FrameFusion', () => {
         await extractor.dispose();
     });
 
+    it('can get first frame from vp9 encoded webm with alpha', async() => {
+        // Arrange
+        const extractor = await BeamcoderExtractor.create({
+            inputFileOrUrl: './test/samples/vp9-webm-with-alpha.webm',
+            threadCount: 8,
+        });
+
+        // Act and Assert
+        const imageData = await extractor.getImageDataAtTime(0);
+        const canvasImageData = createImageData(imageData.data, imageData.width, imageData.height);
+
+        const canvas = createCanvas(imageData.width, imageData.height);
+        const ctx = canvas.getContext('2d', { alpha: true });
+
+        ctx.putImageData(canvasImageData, 0, 0);
+        expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
+
+        // Cleanup
+        await extractor.dispose();
+    });
+
     it('can get the same frame multiple times', async() => {
         // When smaller increments are requested, the same frame can be returned multiple times. This happens when the
         // caller plays the video at a lower playback rate than the source video.
@@ -418,7 +439,6 @@ describe('FrameFusion', () => {
 
     it('should accurately generate frames when seeking to time that aligns with frame boundaries.', async() => {
         // Arrange
-
         // ffprobe -show_frames test/samples/count0To179.mp4 | grep pts
         // pts=30720
         // pts_time=2.000000
