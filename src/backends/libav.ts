@@ -1,15 +1,18 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable no-undef */
+/* eslint-disable @typescript-eslint/ban-types */
 import type {
     Packet,
-    Demuxer,
-    Decoder,
-    Filterer,
-    Frame
-} from '@lumen5/beamcoder';
-import beamcoder from '@lumen5/beamcoder';
+    Frame,
+    Stream,
+    CodecParameters,
+    LibAV
+} from 'libav.js';
+import LibAVJs from 'libav.js';
+// import * as LibAVWebCodecsBridge from 'libavjs-webcodecs-bridge';
 import type { ImageData } from '../types';
 import { BaseExtractor } from '../BaseExtractor';
-import type { Extractor, ExtractorArgs, InterpolateMode } from '../../framefusion';
-import { DownloadVideoURL } from '../DownloadVideoURL';
+import type { Extractor, ExtractorArgs } from '../../framefusion';
 
 const VERBOSE = false;
 
@@ -18,104 +21,163 @@ const VERBOSE = false;
  */
 const RGBA_PIXEL_SIZE = 4;
 
-const createDecoder = ({
+
+class Decoder {
+    decode: (packet: Packet) => Promise<{ frames: Frame[]; }>;
+    flush: () => Promise<{ frames: Frame[]; }>;
+}
+
+class Demuxer {
+    libav: LibAV;
+    streams: Stream[];
+    fmt_context: number;
+    pkt: number;
+    codecParameters: CodecParameters[];
+    constructor(libav: LibAV, fmt_context: number, streams: Stream[], pkt: number, codecParameters: CodecParameters[]) {
+        this.libav = libav;
+        this.streams = streams;
+        this.fmt_context = fmt_context;
+        this.pkt = pkt;
+        this.codecParameters = codecParameters;
+    }
+
+    async seek({ stream_index, timestamp, any }: {
+        stream_index: 0; // even though we specify the stream index, it still seeks all streams
+        timestamp: number;
+        any: boolean;
+    }): Promise<void> {
+        await this.libav.avformat_seek_file_max(this.fmt_context, stream_index, timestamp, 0, 0);
+    }
+
+    async read(): Promise<Packet> {
+        const n = await this.libav.av_read_frame(this.fmt_context, this.pkt);
+        if (n === this.libav.AVERROR_EOF) {
+            return null;
+        }
+        // console.log('read', n, 'packet');
+        const packet = await this.libav.ff_copyout_packet(this.pkt);
+        return packet;
+    }
+
+    forceClose() {
+        console.log('forceClose');
+    }
+}
+
+async function createDemuxer(libav: LibAV, file: ArrayBuffer): Promise<Demuxer> {
+    await libav.mkreadaheadfile('input', new Blob([file]));
+    const [fmt_ctx, istreams] =
+        await libav.ff_init_demuxer_file('input');
+
+    const pkt = await libav.av_packet_alloc();
+    const codecParameters = await Promise.all(istreams.map((stream) => {
+        return libav.ff_copyout_codecpar(stream.codecpar);
+    }));
+
+    return new Demuxer(libav, fmt_ctx, istreams, pkt, codecParameters);
+}
+
+const createDecoder = async({
+    libav,
     demuxer,
     streamIndex,
     threadCount,
 }: {
+    libav: LibAV;
     demuxer: Demuxer;
     streamIndex: number;
     threadCount: number;
-}): Decoder => {
-    const commonParams = {
-        width: demuxer.streams[streamIndex].codecpar.width,
-        height: demuxer.streams[streamIndex].codecpar.height,
-        pix_fmt: demuxer.streams[streamIndex].codecpar.format,
-        thread_count: threadCount,
+}) => {
+    const istream = demuxer.streams[streamIndex];
+    let streamToConfig;
+    let Decoder: any;
+    let packetToChunk: Function;
+    if (istream.codec_type === libav.AVMEDIA_TYPE_VIDEO) {
+        streamToConfig = window.LibAVWebCodecsBridge.videoStreamToConfig;
+        Decoder = VideoDecoder;
+        packetToChunk = window.LibAVWebCodecsBridge.packetToEncodedVideoChunk;
+    }
+    else if (istream.codec_type === libav.AVMEDIA_TYPE_AUDIO) {
+        streamToConfig = window.LibAVWebCodecsBridge.audioStreamToConfig;
+        Decoder = AudioDecoder;
+        packetToChunk = window.LibAVWebCodecsBridge.packetToEncodedAudioChunk;
+    }
+    else {
+        throw new Error('Unsupported stream type: ' + istream.codec_type);
+    }
+
+    // Convert the config
+    const config = await streamToConfig(libav, istream);
+    let supported;
+    try {
+        supported = await Decoder.isConfigSupported(config);
+    }
+    catch (ex) {}
+    if (!supported || !supported.supported) {
+        throw new Error('Codec not supported: ' + JSON.stringify(config));
+    }
+
+    let currFrames = [];
+
+    // Make the decoder
+    const decoder = new Decoder({
+        output: frame => {
+            // debugger;
+            console.count('produced frame');
+            currFrames.push(frame);
+        },
+        error: (error) => {
+            alert('Decoder ' + JSON.stringify(config) + ':\n' + error);
+        },
+    });
+    decoder.configure(config);
+    return {
+        flush: async() => {
+            await decoder.flush();
+            const result = { frames: currFrames };
+            currFrames = [];
+            return result;
+        },
+        decode: async(packet: Packet) => {
+            if (packet.duration === 0) {
+                await decoder.flush();
+                console.log('Stream duration is unknown');
+                // hrow new Error('Stream duration is unknown');
+                return { frames: currFrames };
+            }
+            console.log('decode', {
+                pts: packet.pts,
+                dts: packet.dts,
+                duration: packet.duration,
+                stream_index: packet.stream_index,
+                flags: packet.flags,
+                stream: {
+                    duration: istream.duration,
+                    time_base_den: istream.time_base_den,
+                    time_base_num: istream.time_base_num,
+                },
+            });
+            const chunk = await packetToChunk(packet, istream);
+            /// await decoder.flush();
+
+            // if (chunk.type === 'key') {
+            //     await decoder.flush();
+            // }
+            while (decoder.decodeQueueSize) {
+                await new Promise(resolve => {
+                    decoder.addEventListener('dequeue', resolve, { once: true });
+                });
+            }
+            decoder.decode(chunk);
+            const result = { frames: currFrames };
+            currFrames = [];
+
+            return result;
+        },
     };
-
-    if (demuxer.streams[streamIndex].codecpar.name === 'vp8') {
-        return beamcoder.decoder({
-            ...commonParams,
-            name: 'libvpx',
-        });
-    }
-
-    if (demuxer.streams[streamIndex].codecpar.name === 'vp9') {
-        return beamcoder.decoder({
-            ...commonParams,
-            name: 'libvpx-vp9',
-        });
-    }
-
-    return beamcoder.decoder({
-        ...commonParams,
-        demuxer: demuxer,
-        stream_index: streamIndex,
-    });
-};
-
-/**
- * A filter to convert between color spaces.
- * An example would be YUV to RGB, for mp4 to png conversion.
- */
-const createFilter = async({
-    stream,
-    outputPixelFormat,
-    interpolateFps,
-    interpolateMode = 'fast',
-}: {
-    stream: beamcoder.Stream;
-    outputPixelFormat: string;
-    interpolateFps?: number;
-    interpolateMode?: InterpolateMode;
-}): Promise<beamcoder.Filterer> => {
-    if (!stream.codecpar.format) {
-        return null;
-    }
-
-    let filterSpec = [`[in0:v]format=${stream.codecpar.format}`];
-
-    if (interpolateFps) {
-        if (interpolateMode === 'high-quality') {
-            filterSpec = [...filterSpec, `minterpolate=fps=${interpolateFps}`];
-        }
-        else if (interpolateMode === 'fast') {
-            filterSpec = [...filterSpec, `fps=${interpolateFps}`];
-        }
-        else {
-            throw new Error(`Unexpected interpolation mode: ${interpolateMode}`);
-        }
-    }
-
-    const filterSpecStr = filterSpec.join(', ') + '[out0:v]';
-
-    VERBOSE && console.log(`filterSpec: ${filterSpecStr}`);
-
-    return beamcoder.filterer({
-        filterType: 'video',
-        inputParams: [
-            {
-                name: 'in0:v',
-                width: stream.codecpar.width,
-                height: stream.codecpar.height,
-                pixelFormat: stream.codecpar.format,
-                timeBase: stream.time_base,
-                pixelAspect: stream.sample_aspect_ratio,
-            },
-        ],
-        outputParams: [
-            {
-                name: 'out0:v',
-                pixelFormat: outputPixelFormat,
-            },
-        ],
-        filterSpec: filterSpecStr,
-    });
 };
 
 const STREAM_TYPE_VIDEO = 'video';
-const COLORSPACE_RGBA = 'rgba';
 const MAX_RECURSION = 5;
 
 /**
@@ -131,12 +193,6 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      * The decoder reads packets and can output raw frame data
      */
     #decoder: Decoder = null;
-
-    /**
-     * Packets can be filtered to change colorspace, fps and add various effects. If there are no colorspace changes or
-     * filters, filter might not be necessary.
-     */
-    #filterer: Filterer = null;
 
     /**
      * This is where we store filtered frames from each previously processed packet.
@@ -201,28 +257,18 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         inputFileOrUrl,
         threadCount = 8,
     }: ExtractorArgs): Promise<void> {
+        const libav = await LibAVJs.LibAV({ noworker: true });
         this.#threadCount = threadCount;
-        if (inputFileOrUrl.startsWith('http')) {
-            VERBOSE && console.log('downloading url', inputFileOrUrl);
-            const downloadUrl = new DownloadVideoURL(inputFileOrUrl);
-            await downloadUrl.download();
-            inputFileOrUrl = downloadUrl.filepath;
-            VERBOSE && console.log('finished downloading');
-        }
-        // Assume file url at this point
-        if (!inputFileOrUrl.startsWith('file:')) {
-            inputFileOrUrl = 'file:' + inputFileOrUrl;
-        }
-        this.#demuxer = await beamcoder.demuxer(inputFileOrUrl);
-        this.#streamIndex = this.#demuxer.streams.findIndex(stream => stream.codecpar.codec_type === STREAM_TYPE_VIDEO);
+
+        VERBOSE && console.log('downloading url', inputFileOrUrl);
+        const buffer = await fetch(inputFileOrUrl).then((response) => response.arrayBuffer());
+        VERBOSE && console.log('finished downloading');
+        this.#demuxer = await createDemuxer(libav, buffer);
+        this.#streamIndex = this.#demuxer.streams.findIndex(stream => stream.codec_type === libav.AVMEDIA_TYPE_VIDEO);
 
         if (this.#streamIndex === -1) {
             throw new Error(`File has no ${STREAM_TYPE_VIDEO} stream!`);
         }
-        this.#filterer = await createFilter({
-            stream: this.#demuxer.streams[this.#streamIndex],
-            outputPixelFormat: COLORSPACE_RGBA,
-        });
     }
 
     async #createDecoder() {
@@ -232,7 +278,8 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             await this.#decoder.flush();
             this.#decoder = null;
         }
-        this.#decoder = createDecoder({
+        this.#decoder = await createDecoder({
+            libav: this.#demuxer.libav,
             demuxer: this.#demuxer as Demuxer,
             streamIndex: this.#streamIndex,
             threadCount: this.#threadCount,
@@ -250,21 +297,21 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      * Width in pixels
      */
     get width(): number {
-        return this.#demuxer.streams[this.#streamIndex].codecpar.width;
+        return this.#demuxer.codecParameters[this.#streamIndex].width;
     }
 
     /**
      * Height in pixels
      */
     get height(): number {
-        return this.#demuxer.streams[this.#streamIndex].codecpar.height;
+        return this.#demuxer.codecParameters[this.#streamIndex].height;
     }
 
     /**
      * Get the beamcoder Frame for a given time in seconds
      * @param targetTime
      */
-    async getFrameAtTime(targetTime: number): Promise<beamcoder.Frame> {
+    async getFrameAtTime(targetTime: number): Promise<any> {
         VERBOSE && console.log(`getFrameAtTime time(s)=${targetTime}`);
         const targetPts = Math.round(this._timeToPTS(targetTime));
         return this._getFrameAtPts(targetPts);
@@ -302,20 +349,24 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      * Get the presentation timestamp (PTS) for a given time in seconds
      */
     _timeToPTS(time: number) {
-        const time_base = this.#demuxer.streams[this.#streamIndex].time_base;
-        return time * time_base[1] / time_base[0];
+        const stream = this.#demuxer.streams[this.#streamIndex];
+        return time * stream.time_base_den / stream.time_base_num;
     }
 
     /**
      * Get the time in seconds from a given presentation timestamp (PTS)
      */
     ptsToTime(pts: number) {
-        const time_base = this.#demuxer.streams[this.#streamIndex].time_base;
-        return pts * time_base[0] / time_base[1];
+        const stream = this.#demuxer.streams[this.#streamIndex];
+        return pts * stream.time_base_den / stream.time_base_num;
     }
 
     get packetReadCount() {
         return this.#packetReadCount;
+    }
+
+    timestampToPTS(timestamp: number) {
+        return Math.round(this._timeToPTS(timestamp / 1000000));
     }
 
     /**
@@ -325,7 +376,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      * the targetPTS. We use it to further move away from the requested PTS to find a frame. The allows use to read
      * additional packets and find a frame that is closer to the targetPTS.
      */
-    async _getFrameAtPts(targetPTS: number, SeekPTSOffset = 0): Promise<beamcoder.Frame> {
+    async _getFrameAtPts(targetPTS: number, SeekPTSOffset = 0): Promise<Frame> {
         VERBOSE && console.log('_getFrameAtPts', targetPTS, 'seekPTSOffset', SeekPTSOffset, 'duration', this.duration);
         this.#packetReadCount = 0;
 
@@ -337,7 +388,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         // until 30s.
         const RE_SEEK_THRESHOLD = 3; // 3 seconds - typically we have keyframes at shorter intervals
         const hasFrameWithinThreshold = this.#filteredFramesPacket.flat().some(frame => {
-            return this.ptsToTime(Math.abs(targetPTS - (frame as Frame).pts)) < RE_SEEK_THRESHOLD;
+            return this.ptsToTime(Math.abs(targetPTS - this.timestampToPTS((frame as VideoFrame).timestamp))) < RE_SEEK_THRESHOLD;
         });
         VERBOSE && console.log('hasPreviousTargetPTS:', this.#previousTargetPTS === null, ', targetPTS is smaller:', this.#previousTargetPTS > targetPTS, ', has frame within threshold:', hasFrameWithinThreshold);
         if (this.#previousTargetPTS === null || this.#previousTargetPTS > targetPTS || !hasFrameWithinThreshold) {
@@ -363,18 +414,18 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         if (this.#filteredFramesPacket.length > 0) {
             const closestFrame = this.#filteredFramesPacket
                 .flat()
-                .find(f => (f as Frame).pts <= targetPTS) as Frame;
+                .find(f => this.timestampToPTS((f as VideoFrame).timestamp) <= targetPTS) as VideoFrame;
 
             if (closestFrame) {
                 const nextFrame = this.#filteredFramesPacket
                     .flat()
-                    .find(f => (f as Frame).pts > closestFrame.pts) as Frame;
+                    .find(f => this.timestampToPTS((f as VideoFrame).timestamp) > this.timestampToPTS((closestFrame as VideoFrame).timestamp)) as VideoFrame;
 
-                VERBOSE && console.log('returning previously filtered frame with pts', (closestFrame as Frame).pts);
-                closestFramePTS = (closestFrame as Frame).pts;
+                // VERBOSE && console.log('returning previously filtered frame with pts', (closestFrame as Frame).pts);
+                closestFramePTS = this.timestampToPTS((closestFrame as VideoFrame).timestamp);
                 outputFrame = closestFrame;
 
-                if ((nextFrame && nextFrame.pts > targetPTS) || (closestFramePTS === targetPTS)) {
+                if ((nextFrame && this.timestampToPTS((nextFrame as VideoFrame).timestamp) > targetPTS) || (closestFramePTS === targetPTS)) {
                     // We have a next frame, so we know the frame being displayed at targetPTS is the previous one,
                     // which corresponds to outputFrame.
                     this.#previousTargetPTS = targetPTS;
@@ -396,17 +447,16 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             // packet contains frames
             if (this.#frames.length !== 0) {
                 // filter the frames
-                const filteredResult = await this.#filterer.filter([{ name: 'in0:v', frames: this.#frames }]);
-                filteredFrames = filteredResult.flatMap(r => r.frames);
+                filteredFrames = this.#frames;
                 VERBOSE && console.log('filteredFrames', filteredFrames.length, 'filteredFrames.pts:', JSON.stringify(filteredFrames.map(f => f.pts)), '-> target.pts:', targetPTS);
 
                 // get the closest frame to our target presentation timestamp (PTS)
                 // Beamcoder returns decoded packet frames as follows: [1000, 2000, 3000, 4000]
                 // If we're looking for a frame at 0, we want to return the frame at 1000
                 // If we're looking for a frame at 2500, we want to return the frame at 2000
-                const closestFrame = (this.#packetReadCount === 1 && filteredFrames[0].pts > targetPTS)
+                const closestFrame = (this.#packetReadCount === 1 && this.timestampToPTS(filteredFrames[0].timestamp) > targetPTS)
                     ? filteredFrames[0]
-                    : filteredFrames.reverse().find(f => f.pts <= targetPTS);
+                    : filteredFrames.reverse().find(f => this.timestampToPTS(f.timestamp) <= targetPTS);
 
                 // The packet contains frames, but all of them have PTS larger than our a targetPTS (we looked too far)
                 if (!closestFrame) {
@@ -419,7 +469,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
                     this.#filteredFramesPacket.pop();
                 }
 
-                closestFramePTS = closestFrame?.pts;
+                closestFramePTS = this.timestampToPTS(closestFrame?.timestamp);
                 VERBOSE && console.log('closestFramePTS', closestFramePTS, 'targetPTS', targetPTS);
                 if (!outputFrame || closestFramePTS <= targetPTS) {
                     VERBOSE && console.log('assigning outputFrame', closestFrame?.pts);
@@ -471,7 +521,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         VERBOSE && console.log('packet pts:', packet?.pts);
 
         // extract frames from the packet
-        let decodedFrames: beamcoder.DecodedFrames = null;
+        let decodedFrames = null;
         if (packet !== null && this.#decoder) {
             decodedFrames = await this.#decoder.decode(packet as Packet);
             VERBOSE && console.log('decodedFrames', decodedFrames.frames.length, decodedFrames.frames.map(f => f.pts));
@@ -490,7 +540,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             }
         }
 
-        let frames: Frame[] = [];
+        let frames = [];
         if (decodedFrames && decodedFrames.frames.length !== 0) {
             frames = decodedFrames.frames;
         }
@@ -514,22 +564,8 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         return packet as Packet;
     }
 
-    _setFrameDataToImageData(frame: beamcoder.Frame, target: Uint8ClampedArray) {
-        const sourceLineSize = frame.linesize as unknown as number;
-        // frame.data can contain multiple "planes" in other colorspaces, but in rgba, there is just one "plane", so
-        // our data is in frame.data[0]
-        const pixels: Uint8Array = frame.data[0];
-
-        // libav creates larger buffers because it makes their internal code simpler.
-        // we have to trim a part at the right of each pixel row.
-
-        for (let i = 0; i < frame.height; i++) {
-            const sourceStart = i * sourceLineSize;
-            const sourceEnd = sourceStart + frame.width * RGBA_PIXEL_SIZE;
-            const sourceData = pixels.subarray(sourceStart, sourceEnd);
-            const targetOffset = i * frame.width * RGBA_PIXEL_SIZE;
-            target.set(sourceData, targetOffset);
-        }
+    _setFrameDataToImageData(frame: Frame, target: Uint8ClampedArray) {
+        // do smth
     }
 
     async dispose() {
@@ -538,7 +574,6 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             this.#decoder = null;
         }
         this.#demuxer.forceClose();
-        this.#filterer = null;
         this.#filteredFramesPacket = undefined;
         this.#frames = [];
         this.#packet = null;
