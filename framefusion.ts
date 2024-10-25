@@ -1,8 +1,7 @@
 import type { ImageData } from './src/types';
-import { BeamcoderExtractor } from './src/backends/beamcoder.js';
+import { BeamcoderExtractor } from './src/backends/libav';
 
 export type Frame = {
-    pts: number;
     data: Array<Buffer>;
     width: number;
     height: number;
