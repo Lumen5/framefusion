@@ -46,13 +46,20 @@ class Demuxer {
         timestamp: number;
         any: boolean;
     }): Promise<void> {
-        await this.libav.avformat_seek_file_max(this.fmt_context, stream_index, timestamp, 0, 0);
+        console.log('seeking to', timestamp);
+        const ret = await this.libav.avformat_seek_file_max(this.fmt_context, stream_index, timestamp, 0, 0);
+        if (ret < 0) {
+            console.log('Error seeking:', ret);
+        }
     }
 
     async read(): Promise<Packet> {
-        const n = await this.libav.av_read_frame(this.fmt_context, this.pkt);
-        if (n === this.libav.AVERROR_EOF) {
+        const ret = await this.libav.av_read_frame(this.fmt_context, this.pkt);
+        if (ret === this.libav.AVERROR_EOF) {
             return null;
+        }
+        else if (ret < 0) {
+            throw new Error('Error reading packet: ' + ret);
         }
         // console.log('read', n, 'packet');
         const packet = await this.libav.ff_copyout_packet(this.pkt);
@@ -124,6 +131,7 @@ const createDecoder = async({
         output: frame => {
             // debugger;
             console.count('produced frame');
+            console.log('produced frame with timestamp', frame.timestamp);
             currFrames.push(frame);
         },
         error: (error) => {
@@ -158,6 +166,9 @@ const createDecoder = async({
                 },
             });
             const chunk = await packetToChunk(packet, istream);
+            if (chunk.type === 'key') {
+                console.log('key frame', chunk.timestamp);
+            }
             /// await decoder.flush();
 
             // if (chunk.type === 'key') {
@@ -276,7 +287,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         // need to make sure we destroy the old one first if it exists
         if (this.#decoder) {
             await this.#decoder.flush();
-            this.#decoder = null;
+            return this.#decoder;
         }
         this.#decoder = await createDecoder({
             libav: this.#demuxer.libav,
@@ -391,9 +402,9 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             return this.ptsToTime(Math.abs(targetPTS - this.timestampToPTS((frame as VideoFrame).timestamp))) < RE_SEEK_THRESHOLD;
         });
         VERBOSE && console.log('hasPreviousTargetPTS:', this.#previousTargetPTS === null, ', targetPTS is smaller:', this.#previousTargetPTS > targetPTS, ', has frame within threshold:', hasFrameWithinThreshold);
-        if (this.#previousTargetPTS === null || this.#previousTargetPTS > targetPTS || !hasFrameWithinThreshold) {
+        if (this.#previousTargetPTS === null || this.#previousTargetPTS > targetPTS) {
             VERBOSE && console.log(`Seeking to ${targetPTS + SeekPTSOffset}`);
-
+            // debugger;
             await this.#demuxer.seek({
                 stream_index: 0, // even though we specify the stream index, it still seeks all streams
                 timestamp: targetPTS + SeekPTSOffset,

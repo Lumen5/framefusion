@@ -32,11 +32,32 @@
             const ctx = canvas.getContext('2d');
             let time = 0;
             async function render() {
-                if (time > 10) return;
-                const f = await extractor.getFrameAtTime(time);
-                time += 1/30;
-                ctx.drawImage(f, 0, 0);
-                requestAnimationFrame(render);
+                const fps = 30;
+                const startTime = performance.now();
+                while (time < 10) {
+                    console.group('getFrameAtTime'+ time);
+                    const f = await extractor.getFrameAtTime(time);
+                    console.groupEnd('getFrameAtTime'+ time);
+                    time += 1/30;
+                    ctx.drawImage(f, 0, 0);
+                    f.close();
+                }
+                const endTime = performance.now();
+                const framesCount = time * fps;
+                console.log('Decoded videos segment with duration:', time);
+                console.log('Decoded frames count:', framesCount);
+                console.log('Rendering time:', endTime - startTime);
+                console.log('FPS:', framesCount / ((endTime - startTime) / 1000));
+                console.log('Average frame decoding time:', (endTime - startTime) / framesCount);
+
+                // if (time > 7) return;
+                // console.group('getFrameAtTime'+ time);
+                // const f = await extractor.getFrameAtTime(time);
+                // console.groupEnd('getFrameAtTime'+ time);
+                // time += 1/30;
+                // ctx.drawImage(f, 0, 0);
+                // f.close();
+                // requestAnimationFrame(render);
             }
             render();
 
