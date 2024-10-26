@@ -18,6 +18,13 @@ const VERBOSE = false;
  */
 const RGBA_PIXEL_SIZE = 4;
 
+// Convert a duration string in the format HH:MM:SS to seconds
+// Example: 00:01:30 -> 90
+function convertDurationToSeconds(duration) {
+    const [hours, minutes, seconds] = duration.split(':').map(parseFloat);
+    return hours * 3600 + minutes * 60 + seconds;
+}
+
 const createDecoder = ({
     demuxer,
     streamIndex,
@@ -33,6 +40,8 @@ const createDecoder = ({
         pix_fmt: demuxer.streams[streamIndex].codecpar.format,
         thread_count: threadCount,
     };
+
+    console.log('codec', demuxer.streams[streamIndex].codecpar.name);
 
     if (demuxer.streams[streamIndex].codecpar.name === 'vp8') {
         return beamcoder.decoder({
@@ -242,7 +251,14 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      * This is the duration of the first video stream in the file expressed in seconds.
      */
     get duration(): number {
-        return this.ptsToTime(this.#demuxer.streams[this.#streamIndex].duration);
+        const stream = this.#demuxer.streams[this.#streamIndex];
+        if (stream.duration !== null) {
+            return this.ptsToTime(stream.duration);
+        }
+        if (stream?.metadata?.DURATION) {
+            return convertDurationToSeconds(stream.metadata.DURATION);
+        }
+        return 0;
     }
 
     /**
