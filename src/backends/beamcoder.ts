@@ -41,8 +41,6 @@ const createDecoder = ({
         thread_count: threadCount,
     };
 
-    console.log('codec', demuxer.streams[streamIndex].codecpar.name);
-
     if (demuxer.streams[streamIndex].codecpar.name === 'vp8') {
         return beamcoder.decoder({
             ...commonParams,
