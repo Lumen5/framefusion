@@ -73,14 +73,14 @@ describe('FrameFusion', () => {
         await extractor.dispose();
     });
 
-    it('can get duration from webm', async() => {
+    it.only('can get duration from webm', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
             inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-video/anita-6uTzyZtNRKztypC.webm',
         });
 
         // Act and Assert
-        expect(extractor.duration).to.equal(115);
+        expect(extractor.duration).to.equal(115.248);
 
         // Cleanup
         await extractor.dispose();

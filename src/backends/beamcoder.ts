@@ -18,13 +18,6 @@ const VERBOSE = false;
  */
 const RGBA_PIXEL_SIZE = 4;
 
-// Convert a duration string in the format HH:MM:SS to seconds
-// Example: 00:01:30 -> 90
-function convertDurationToSeconds(duration) {
-    const [hours, minutes, seconds] = duration.split(':').map(parseFloat);
-    return hours * 3600 + minutes * 60 + seconds;
-}
-
 const createDecoder = ({
     demuxer,
     streamIndex,
@@ -253,10 +246,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         if (stream.duration !== null) {
             return this.ptsToTime(stream.duration);
         }
-        if (stream?.metadata?.DURATION) {
-            return convertDurationToSeconds(stream.metadata.DURATION);
-        }
-        return 0;
+        return this.ptsToTime(this.#demuxer.duration) / 1000;
     }
 
     /**
