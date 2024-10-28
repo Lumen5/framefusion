@@ -243,7 +243,11 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      * This is the duration of the first video stream in the file expressed in seconds.
      */
     get duration(): number {
-        return this.ptsToTime(this.#demuxer.streams[this.#streamIndex].duration);
+        const stream = this.#demuxer.streams[this.#streamIndex];
+        if (stream.duration !== null) {
+            return this.ptsToTime(stream.duration);
+        }
+        return this.ptsToTime(this.#demuxer.duration) / 1000;
     }
 
     /**

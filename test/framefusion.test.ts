@@ -60,7 +60,7 @@ describe('FrameFusion', () => {
         await extractor.dispose();
     });
 
-    it('can get duration', async() => {
+    it('can get duration from mp4', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
             inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4',
@@ -68,6 +68,19 @@ describe('FrameFusion', () => {
 
         // Act and Assert
         expect(extractor.duration).to.equal(2);
+
+        // Cleanup
+        await extractor.dispose();
+    });
+
+    it.only('can get duration from webm', async() => {
+        // Arrange
+        const extractor = await BeamcoderExtractor.create({
+            inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-video/anita-6uTzyZtNRKztypC.webm',
+        });
+
+        // Act and Assert
+        expect(extractor.duration).to.equal(115.248);
 
         // Cleanup
         await extractor.dispose();
