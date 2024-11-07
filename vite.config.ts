@@ -16,10 +16,13 @@ export default defineConfig({
                 if (format === 'cjs') {
                     return 'framefusion.cjs';
                 }
+                if (format === 'iife') {
+                    return 'framefusion.iife.js'; // file for browser global
+                }
 
                 throw new Error(`Please provide a fileName for ${format}`);
             },
-            formats: ['es', 'cjs'],
+            formats: ['es', 'cjs', 'iife'],
         },
         rollupOptions: {
             external: ['node:https'],

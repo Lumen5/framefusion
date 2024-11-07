@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test framefusion</title>
+    <style>
+        canvas { width: 100%; height: 100%; display: block; }
+    </style>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@libav.js/variant-webcodecs@6.3.7/dist/libav-6.3.7.1-webcodecs.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/libavjs-webcodecs-bridge@0.2.0"></script>
+    <script>
+        var LibAVJs = LibAV;
+    </script>
+</head>
+<body>
+    <canvas id="canvas" width="1920" height="1080"></canvas>
+    <script src="./dist/framefusion.iife.js"></script>
+    <script type="text/javascript">
+        const { BeamcoderExtractor } = framefusion.ts;
+
+        async function start() {
+            const extractor = new BeamcoderExtractor();
+            await extractor.init({
+                inputFileOrUrl: './test/samples/bbb10m.mp4'
+            });
+            console.time('getFrameAtTime');
+            
+            console.timeEnd('getFrameAtTime');
+
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            let time = 0;
+            async function render() {
+                const fps = 30;
+                const startTime = performance.now();
+                while (time < 10) {
+                    console.group('getFrameAtTime'+ time);
+                    const f = await extractor.getFrameAtTime(time);
+                    console.groupEnd('getFrameAtTime'+ time);
+                    time += 1/30;
+                    ctx.drawImage(f, 0, 0);
+                    f.close();
+                }
+                const endTime = performance.now();
+                const framesCount = time * fps;
+                console.log('Decoded videos segment with duration:', time);
+                console.log('Decoded frames count:', framesCount);
+                console.log('Rendering time:', endTime - startTime);
+                console.log('FPS:', framesCount / ((endTime - startTime) / 1000));
+                console.log('Average frame decoding time:', (endTime - startTime) / framesCount);
+
+                // if (time > 7) return;
+                // console.group('getFrameAtTime'+ time);
+                // const f = await extractor.getFrameAtTime(time);
+                // console.groupEnd('getFrameAtTime'+ time);
+                // time += 1/30;
+                // ctx.drawImage(f, 0, 0);
+                // f.close();
+                // requestAnimationFrame(render);
+            }
+            render();
+
+            // ctx.drawImage(f, 0, 0);
+            //debugger;
+        }
+        start();
+    </script>
+</body>
+</html>
