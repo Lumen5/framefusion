@@ -13,6 +13,8 @@ describe('cachedVideoDownloader', () => {
         await resource.download();
 
         expect(fileExistsSync(resource.filepath as string)).to.be.true;
+
+        resource.destroy();
     }, 10000);
 
     it('deletes file when cleared', async() => {
