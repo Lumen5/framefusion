@@ -1,5 +1,6 @@
 import type { ImageData } from './src/types';
 import { BeamcoderExtractor } from './src/backends/beamcoder.js';
+import { CachedVideoDownloader } from './src/cachedVideoDownloader';
 
 export type Frame = {
     pts: number;
@@ -70,4 +71,4 @@ export interface Extractor {
 // run();
 //
 
-export { BeamcoderExtractor };
+export { BeamcoderExtractor, CachedVideoDownloader };
