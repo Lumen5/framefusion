@@ -14,11 +14,15 @@ class CancelRequestError extends Error { }
 export class DownloadVideoURL {
     #url: string | undefined;
     #httpRequest: ClientRequest | undefined = undefined;
-    #filepath: string | undefined = undefined;
+    #filepath: string;
     #tmpObj: tmp.FileResult | undefined = undefined;
 
     constructor(url: string) {
         this.#url = url;
+
+        const extension = path.extname(url);
+        this.#tmpObj = tmp.fileSync({ postfix: extension });
+        this.#filepath = this.#tmpObj.name;
     }
 
     /**
@@ -34,8 +38,6 @@ export class DownloadVideoURL {
     async download() {
         await new Promise<void>((resolve, reject) => {
             const source = this.#url;
-            const extension = path.extname(source);
-            this.#tmpObj = tmp.fileSync({ postfix: extension });
             try {
                 const connectionHandler = source.startsWith('https://') ? https : http;
                 this.#httpRequest = connectionHandler.get(source, (res) => {
