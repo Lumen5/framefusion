@@ -35,43 +35,39 @@ export class DownloadVideoURL {
    */
     async download() {
         const source = this.#url;
-        try {
-            const response = await fetch(source);
-            if (!response.ok) {
-                throw new Error(
-                    `Failed to fetch ${source}, status: ${response.status}`
-                );
-            }
 
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('video')) {
-                throw new Error(
-                    `Source ${source}, returned unsupported content type ${contentType}`
-                );
-            }
+        const response = await fetch(source);
+        if (!response.ok) {
+            throw new Error(
+                `Failed to fetch ${source}, status: ${response.status}`
+            );
+        }
 
-            const writeStream = fs.createWriteStream(this.#tmpObj.name);
-            const readableStream = response.body;
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('video')) {
+            throw new Error(
+                `Source ${source}, returned unsupported content type ${contentType}`
+            );
+        }
 
-            if (!readableStream) {
-                throw new Error(`Response body is null for ${source}`);
-            }
+        const writeStream = fs.createWriteStream(this.#tmpObj.name);
+        const readableStream = response.body;
 
-            await new Promise<void>((resolve, reject) => {
-                readableStream.pipeTo(Writable.toWeb(writeStream));
-                writeStream.on('finish', () => {
-                    writeStream.close();
-                    this.#filepath = this.#tmpObj.name;
-                    resolve();
-                });
-                writeStream.on('error', (e) => {
-                    reject(e);
-                });
+        if (!readableStream) {
+            throw new Error(`Response body is null for ${source}`);
+        }
+
+        return new Promise<void>((resolve, reject) => {
+            readableStream.pipeTo(Writable.toWeb(writeStream));
+            writeStream.on('finish', () => {
+                writeStream.close();
+                this.#filepath = this.#tmpObj.name;
+                resolve();
             });
-        }
-        catch (e) {
-            throw e;
-        }
+            writeStream.on('error', (e) => {
+                reject(e);
+            });
+        });
     }
 
     clear() {
