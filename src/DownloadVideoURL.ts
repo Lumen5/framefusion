@@ -55,34 +55,31 @@ export class DownloadVideoURL {
             throw new Error(`Response body is null for ${source}`);
         }
 
-        return new Promise<void>(async(resolve, reject) => {
-            const reader = readableStream.getReader();
+        const reader = readableStream.getReader();
 
-            try {
-                while (true) {
-                    const { done, value } = await reader.read();
+        return new Promise<void>((resolve, reject) => {
+            const pump = () => {
+                reader.read().then(({ done, value }) => {
                     if (done) {
-                        break;
+                        writeStream.end(() => {
+                            this.#filepath = this.#tmpObj.name;
+                            resolve();
+                        });
+                        return;
                     }
-                    if (value) {
-                        writeStream.write(value);
+                    const buffer = Buffer.from(value);
+                    if (!writeStream.write(buffer)) {
+                        // Wait for 'drain' before continuing
+                        writeStream.once('drain', pump);
                     }
-                }
-                writeStream.end();
-                this.#filepath = this.#tmpObj.name;
-                resolve();
-            }
-            catch (err) {
-                writeStream.destroy();
-                reject(err);
-            }
-            finally {
-                reader.releaseLock();
-            }
+                    else {
+                        pump();
+                    }
+                }).catch(reject);
+            };
 
-            writeStream.on('error', (err) => {
-                reject(err);
-            });
+            writeStream.on('error', reject);
+            pump();
         });
     }
 
