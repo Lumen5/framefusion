@@ -1,7 +1,5 @@
 import path from 'path';
 import type { ClientRequest } from 'http';
-
-import { Writable } from 'stream';
 import tmp from 'tmp';
 import fs from 'fs-extra';
 
@@ -57,15 +55,33 @@ export class DownloadVideoURL {
             throw new Error(`Response body is null for ${source}`);
         }
 
-        return new Promise<void>((resolve, reject) => {
-            readableStream.pipeTo(Writable.toWeb(writeStream));
-            writeStream.on('finish', () => {
-                writeStream.close();
+        return new Promise<void>(async(resolve, reject) => {
+            const reader = readableStream.getReader();
+
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) {
+                        break;
+                    }
+                    if (value) {
+                        writeStream.write(value);
+                    }
+                }
+                writeStream.end();
                 this.#filepath = this.#tmpObj.name;
                 resolve();
-            });
-            writeStream.on('error', (e) => {
-                reject(e);
+            }
+            catch (err) {
+                writeStream.destroy();
+                reject(err);
+            }
+            finally {
+                reader.releaseLock();
+            }
+
+            writeStream.on('error', (err) => {
+                reject(err);
             });
         });
     }
