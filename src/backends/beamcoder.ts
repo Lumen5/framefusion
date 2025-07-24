@@ -77,7 +77,7 @@ const createFilter = async({
     let filterSpec = [`[in0:v]format=${stream.codecpar.format}`];
 
     if (stream.codecpar.color_trc === 'arib-std-b67') {
-        filterSpec = [...filterSpec, `zscale=primaries=bt709`];
+        filterSpec = [...filterSpec, `zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv,format=yuv420p`];
     }
 
     if (interpolateFps) {
