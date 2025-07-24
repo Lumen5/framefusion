@@ -92,8 +92,6 @@ const createFilter = async({
         }
     }
 
-    // filterSpec.push('');
-
     const filterSpecStr = filterSpec.join(', ') + '[out0:v]';
 
     VERBOSE && console.log(`filterSpec: ${filterSpecStr}`);
