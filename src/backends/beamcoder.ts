@@ -76,6 +76,10 @@ const createFilter = async({
 
     let filterSpec = [`[in0:v]format=${stream.codecpar.format}`];
 
+    if (stream.codecpar.color_trc === 'arib-std-b67') {
+        filterSpec = [...filterSpec, `zscale=primaries=bt709`];
+    }
+
     if (interpolateFps) {
         if (interpolateMode === 'high-quality') {
             filterSpec = [...filterSpec, `minterpolate=fps=${interpolateFps}`];
@@ -87,6 +91,8 @@ const createFilter = async({
             throw new Error(`Unexpected interpolation mode: ${interpolateMode}`);
         }
     }
+
+    // filterSpec.push('');
 
     const filterSpecStr = filterSpec.join(', ') + '[out0:v]';
 
