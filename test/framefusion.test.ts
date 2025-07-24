@@ -221,7 +221,7 @@ describe('FrameFusion', () => {
         await extractor.dispose();
     });
 
-    it.only('can get HDR Video fame', async() => {
+    it('can get HDR Video fame', async() => {
         // Arrange
         const extractor = await BeamcoderExtractor.create({
             inputFileOrUrl: './test/samples/hdr.mp4',
