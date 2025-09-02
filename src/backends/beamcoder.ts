@@ -240,11 +240,14 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     }
 
     get duration(): number {
-        return Math.max(...this.#demuxer.streams
+        const maxStreamsDuration = Math.max(...this.#demuxer.streams
             .map(s => {
                 const time_base = s.time_base;
                 return s.duration * time_base[0] / time_base[1];
             }));
+        // MP4 duration is defined as the longest stream duration
+        // Webm stores it in Segment.Info.Duration
+        return maxStreamsDuration || (this.ptsToTime(this.#demuxer.duration) / 1000);
     }
 
     /**
