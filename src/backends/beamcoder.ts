@@ -76,10 +76,6 @@ const createFilter = async({
 
     let filterSpec = [`[in0:v]format=${stream.codecpar.format}`];
 
-    if (stream.codecpar.color_trc === 'arib-std-b67') {
-        filterSpec = [...filterSpec, `zscale=t=linear:npl=100:p=bt2020,tonemap=tonemap=hable:desat=0,zscale=t=bt709:p=bt709:m=bt709:r=tv`];
-    }
-
     if (interpolateFps) {
         if (interpolateMode === 'high-quality') {
             filterSpec = [...filterSpec, `minterpolate=fps=${interpolateFps}`];
@@ -111,7 +107,7 @@ const createFilter = async({
         outputParams: [
             {
                 name: 'out0:v',
-                pixelFormat: outputPixelFormat,
+                pixelFormat: stream.codecpar.format,
             },
         ],
         filterSpec: filterSpecStr,
@@ -119,7 +115,7 @@ const createFilter = async({
 };
 
 const STREAM_TYPE_VIDEO = 'video';
-const COLORSPACE_RGBA = 'rgba';
+// const COLORSPACE_RGBA = 'rgba';
 const MAX_RECURSION = 5;
 
 /**
@@ -225,7 +221,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         }
         this.#filterer = await createFilter({
             stream: this.#demuxer.streams[this.#streamIndex],
-            outputPixelFormat: COLORSPACE_RGBA,
+            outputPixelFormat: 'nv12',
         });
     }
 
@@ -243,15 +239,15 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         });
     }
 
-    /**
-     * This is the duration of the first video stream in the file expressed in seconds.
-     */
     get duration(): number {
-        const stream = this.#demuxer.streams[this.#streamIndex];
-        if (stream.duration !== null) {
-            return this.ptsToTime(stream.duration);
-        }
-        return this.ptsToTime(this.#demuxer.duration) / 1000;
+        const maxStreamsDuration = Math.max(...this.#demuxer.streams
+            .map(s => {
+                const time_base = s.time_base;
+                return s.duration * time_base[0] / time_base[1];
+            }));
+        // MP4 duration is defined as the longest stream duration
+        // Webm stores it in Segment.Info.Duration
+        return maxStreamsDuration || (this.ptsToTime(this.#demuxer.duration) / 1000);
     }
 
     /**
@@ -303,6 +299,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             data: rawData,
             width: frame.width,
             height: frame.height,
+            frame,
         };
     }
 
