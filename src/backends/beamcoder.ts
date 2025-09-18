@@ -107,7 +107,7 @@ const createFilter = async({
         outputParams: [
             {
                 name: 'out0:v',
-                pixelFormat: stream.codecpar.format,
+                pixelFormat: outputPixelFormat,
             },
         ],
         filterSpec: filterSpecStr,
@@ -200,6 +200,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     async init({
         inputFileOrUrl,
         threadCount = 8,
+        outputPixelFormat = 'rgba',
     }: ExtractorArgs): Promise<void> {
         this.#threadCount = threadCount;
         if (inputFileOrUrl.startsWith('http')) {
@@ -221,7 +222,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         }
         this.#filterer = await createFilter({
             stream: this.#demuxer.streams[this.#streamIndex],
-            outputPixelFormat: 'nv12',
+            outputPixelFormat: outputPixelFormat === 'original' ? this.#demuxer.streams[this.#streamIndex].codecpar.format : 'rgba',
         });
     }
 
@@ -287,16 +288,12 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             return null;
         }
 
-        let rawData = target;
-
-        if (!target) {
-            rawData = new Uint8ClampedArray(frame.width * frame.height * RGBA_PIXEL_SIZE);
+        if (target) {
+            this._setFrameDataToImageData(frame, target);
         }
 
-        this._setFrameDataToImageData(frame, rawData);
-
         return {
-            data: rawData,
+            data: target,
             width: frame.width,
             height: frame.height,
             frame,
