@@ -275,7 +275,7 @@ describe('FrameFusion', () => {
         ];
 
         for (let i = 0; i < times.length; i++) {
-            const imageData = await extractor.getImageDataAtTime(times[i]); // 3
+            const imageData = await extractor.getImageDataAtTime(times[i], new Uint8ClampedArray(extractor.width * extractor.height * 4));
             if (!imageData) {
                 throw new Error(`Failed to get image data for time ${times[i]}`);
             }
@@ -408,7 +408,7 @@ describe('FrameFusion', () => {
         // ensure we render the 2nd frame properly - if we read the next packet we'll draw 3 instead of 2
         for (let i = 0; i < 10; i++) {
             const time = i / FPS;
-            const imageData = await extractor.getImageDataAtTime(time);
+            const imageData = await extractor.getImageDataAtTime(time, new Uint8ClampedArray(extractor.width * extractor.height * 4));
             if (!imageData) {
                 continue;
             }
@@ -465,7 +465,7 @@ describe('FrameFusion', () => {
         });
         // Act & assert
         for (const time of [2.0, 2.033333, 2.066667]) {
-            const imageData = await extractor.getImageDataAtTime(time);
+            const imageData = await extractor.getImageDataAtTime(time, new Uint8ClampedArray(extractor.width * extractor.height * 4));
             if (!imageData) {
                 continue;
             }
@@ -492,7 +492,7 @@ describe('FrameFusion', () => {
         // ensure we render the last few frames properly - we have to flush the decoder to get the last few frames
         for (let i = 50; i < 60; i++) {
             const time = i / FPS;
-            const imageData = await extractor.getImageDataAtTime(time);
+            const imageData = await extractor.getImageDataAtTime(time, new Uint8ClampedArray(extractor.width * extractor.height * 4));
             if (!imageData) {
                 continue;
             }
