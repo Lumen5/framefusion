@@ -7,6 +7,7 @@ dist/**
 docs/**
 framefusion-*.tgz
 __image_snapshots__/__diff_output__/**
+.DS_Store
 
 # We are using yarn, this is a npm file
 package-lock.json
