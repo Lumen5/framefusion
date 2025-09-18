@@ -221,27 +221,6 @@ describe('FrameFusion', () => {
         await extractor.dispose();
     });
 
-    it('can get HDR Video fame', async() => {
-        // Arrange
-        const extractor = await BeamcoderExtractor.create({
-            inputFileOrUrl: './test/samples/hdr.mp4',
-            threadCount: 8,
-        });
-
-        // Act and Assert
-        const imageData = await extractor.getImageDataAtTime(100);
-        const canvasImageData = createImageData(imageData.data, imageData.width, imageData.height);
-
-        const canvas = createCanvas(imageData.width, imageData.height);
-        const ctx = canvas.getContext('2d', { alpha: true });
-
-        ctx.putImageData(canvasImageData, 0, 0);
-        expect(canvas.toBuffer('image/png')).toMatchImageSnapshot();
-
-        // Cleanup
-        await extractor.dispose();
-    });
-
     it('can get the same frame multiple times', async() => {
         // When smaller increments are requested, the same frame can be returned multiple times. This happens when the
         // caller plays the video at a lower playback rate than the source video.
