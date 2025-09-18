@@ -166,8 +166,9 @@ describe('FrameFusion', () => {
         });
 
         // Act and Assert
-        const imageData = await extractor.getImageDataAtTime(100);
-        const canvasImageData = createImageData(imageData.data, imageData.width, imageData.height);
+        const rgbaFrameBuffer = new Uint8ClampedArray(extractor.width * extractor.height * 4);
+        const imageData = await extractor.getImageDataAtTime(100, rgbaFrameBuffer);
+        const canvasImageData = createImageData(rgbaFrameBuffer, imageData.width, imageData.height);
 
         const canvas = createCanvas(imageData.width, imageData.height);
         const ctx = canvas.getContext('2d', { alpha: true });
@@ -187,8 +188,9 @@ describe('FrameFusion', () => {
         });
 
         // Act and Assert
-        const imageData = await extractor.getImageDataAtTime(100);
-        const canvasImageData = createImageData(imageData.data, imageData.width, imageData.height);
+        const rgbaFrameBuffer = new Uint8ClampedArray(extractor.width * extractor.height * 4);
+        const imageData = await extractor.getImageDataAtTime(100, rgbaFrameBuffer);
+        const canvasImageData = createImageData(rgbaFrameBuffer, imageData.width, imageData.height);
 
         const canvas = createCanvas(imageData.width, imageData.height);
         const ctx = canvas.getContext('2d', { alpha: true });
@@ -208,8 +210,9 @@ describe('FrameFusion', () => {
         });
 
         // Act and Assert
-        const imageData = await extractor.getImageDataAtTime(0);
-        const canvasImageData = createImageData(imageData.data, imageData.width, imageData.height);
+        const rgbaFrameBuffer = new Uint8ClampedArray(extractor.width * extractor.height * 4);
+        const imageData = await extractor.getImageDataAtTime(0, rgbaFrameBuffer);
+        const canvasImageData = createImageData(rgbaFrameBuffer, imageData.width, imageData.height);
 
         const canvas = createCanvas(imageData.width, imageData.height);
         const ctx = canvas.getContext('2d', { alpha: true });
@@ -245,9 +248,10 @@ describe('FrameFusion', () => {
             1.876923,
         ];
 
+        const rgbaFrameBuffer = new Uint8ClampedArray(extractor.width * extractor.height * 4);
         for (let i = 0; i < times.length; i++) {
-            const imageData = await extractor.getImageDataAtTime(times[i]); // 3
-            const canvasImageData = createImageData(imageData.data, imageData.width, imageData.height);
+            const imageData = await extractor.getImageDataAtTime(times[i], rgbaFrameBuffer);
+            const canvasImageData = createImageData(rgbaFrameBuffer, imageData.width, imageData.height);
             if (!imageData) {
                 throw new Error(`Failed to get image data for time ${times[i]}`);
             }
@@ -274,12 +278,13 @@ describe('FrameFusion', () => {
             2.02,
         ];
 
+        const rgbaFrameBuffer = new Uint8ClampedArray(extractor.width * extractor.height * 4);
         for (let i = 0; i < times.length; i++) {
-            const imageData = await extractor.getImageDataAtTime(times[i]); // 3
+            const imageData = await extractor.getImageDataAtTime(times[i], rgbaFrameBuffer);
             if (!imageData) {
                 throw new Error(`Failed to get image data for time ${times[i]}`);
             }
-            const canvasImageData = createImageData(imageData.data, imageData.width, imageData.height);
+            const canvasImageData = createImageData(rgbaFrameBuffer, imageData.width, imageData.height);
             const canvas = createCanvas(imageData.width, imageData.height);
             const ctx = canvas.getContext('2d');
             ctx.putImageData(canvasImageData, 0, 0);
@@ -368,14 +373,15 @@ describe('FrameFusion', () => {
             1.5, // forward to 46
             0.5, // backward to 16
         ];
+        const rgbaFrameBuffer = new Uint8ClampedArray(extractor.width * extractor.height * 4);
 
         // Act and Assert
         for (let i = 0; i < times_to_get.length; i++) {
-            const imageData = await extractor.getImageDataAtTime(times_to_get[i]);
+            const imageData = await extractor.getImageDataAtTime(times_to_get[i], rgbaFrameBuffer);
             if (!imageData) {
                 continue;
             }
-            const canvasImageData = createImageData(imageData.data, imageData.width, imageData.height);
+            const canvasImageData = createImageData(rgbaFrameBuffer, imageData.width, imageData.height);
             const canvas = createCanvas(imageData.width, imageData.height);
             const ctx = canvas.getContext('2d');
             ctx.putImageData(canvasImageData, 0, 0);
@@ -403,16 +409,17 @@ describe('FrameFusion', () => {
         const extractor = await BeamcoderExtractor.create({
             inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4',
         });
+        const rgbaFrameBuffer = new Uint8ClampedArray(extractor.width * extractor.height * 4);
 
         // Act & assert
         // ensure we render the 2nd frame properly - if we read the next packet we'll draw 3 instead of 2
         for (let i = 0; i < 10; i++) {
             const time = i / FPS;
-            const imageData = await extractor.getImageDataAtTime(time);
+            const imageData = await extractor.getImageDataAtTime(time, rgbaFrameBuffer);
             if (!imageData) {
                 continue;
             }
-            const canvasImageData = createImageData(imageData.data, imageData.width, imageData.height);
+            const canvasImageData = createImageData(rgbaFrameBuffer, imageData.width, imageData.height);
             const canvas = createCanvas(imageData.width, imageData.height);
             const ctx = canvas.getContext('2d');
             ctx.putImageData(canvasImageData, 0, 0);
@@ -430,16 +437,17 @@ describe('FrameFusion', () => {
         const extractor = await BeamcoderExtractor.create({
             inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4',
         });
+        const rgbaFrameBuffer = new Uint8ClampedArray(extractor.width * extractor.height * 4);
 
         // Act & assert
         // ensure we render the last few frames properly - we have to flush the decoder to get the last few frames
         for (let i = 20; i < 30; i++) {
             const time = i / FPS;
-            const imageData = await extractor.getImageDataAtTime(time);
+            const imageData = await extractor.getImageDataAtTime(time, rgbaFrameBuffer);
             if (!imageData) {
                 continue;
             }
-            const canvasImageData = createImageData(imageData.data, imageData.width, imageData.height);
+            const canvasImageData = createImageData(rgbaFrameBuffer, imageData.width, imageData.height);
             const canvas = createCanvas(imageData.width, imageData.height);
             const ctx = canvas.getContext('2d');
             ctx.putImageData(canvasImageData, 0, 0);
@@ -463,13 +471,15 @@ describe('FrameFusion', () => {
         const extractor = await BeamcoderExtractor.create({
             inputFileOrUrl: TEST_VIDEO_COUNT_0_TO_179,
         });
+        const rgbaFrameBuffer = new Uint8ClampedArray(extractor.width * extractor.height * 4);
+
         // Act & assert
         for (const time of [2.0, 2.033333, 2.066667]) {
-            const imageData = await extractor.getImageDataAtTime(time);
+            const imageData = await extractor.getImageDataAtTime(time, rgbaFrameBuffer);
             if (!imageData) {
                 continue;
             }
-            const canvasImageData = createImageData(imageData.data, imageData.width, imageData.height);
+            const canvasImageData = createImageData(rgbaFrameBuffer, imageData.width, imageData.height);
             const canvas = createCanvas(imageData.width, imageData.height);
             const ctx = canvas.getContext('2d');
             ctx.putImageData(canvasImageData, 0, 0);
@@ -488,15 +498,17 @@ describe('FrameFusion', () => {
             inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-images/countTo60.mp4',
         });
 
+        const rgbaFrameBuffer = new Uint8ClampedArray(extractor.width * extractor.height * 4);
+
         // Act & assert
         // ensure we render the last few frames properly - we have to flush the decoder to get the last few frames
         for (let i = 50; i < 60; i++) {
             const time = i / FPS;
-            const imageData = await extractor.getImageDataAtTime(time);
+            const imageData = await extractor.getImageDataAtTime(time, rgbaFrameBuffer);
             if (!imageData) {
                 continue;
             }
-            const canvasImageData = createImageData(imageData.data, imageData.width, imageData.height);
+            const canvasImageData = createImageData(rgbaFrameBuffer, imageData.width, imageData.height);
             const canvas = createCanvas(imageData.width, imageData.height);
             const ctx = canvas.getContext('2d');
             ctx.putImageData(canvasImageData, 0, 0);

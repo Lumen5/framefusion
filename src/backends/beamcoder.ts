@@ -16,7 +16,7 @@ const VERBOSE = false;
 /**
  * RGBA format need one byte for every components: r, g, b and a
  */
-const RGBA_PIXEL_SIZE = 4;
+export const RGBA_PIXEL_SIZE = 4;
 
 const createDecoder = ({
     demuxer,
@@ -115,7 +115,6 @@ const createFilter = async({
 };
 
 const STREAM_TYPE_VIDEO = 'video';
-const COLORSPACE_RGBA = 'rgba';
 const MAX_RECURSION = 5;
 
 /**
@@ -200,6 +199,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     async init({
         inputFileOrUrl,
         threadCount = 8,
+        outputPixelFormat = 'rgba',
     }: ExtractorArgs): Promise<void> {
         this.#threadCount = threadCount;
         if (inputFileOrUrl.startsWith('http')) {
@@ -221,7 +221,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         }
         this.#filterer = await createFilter({
             stream: this.#demuxer.streams[this.#streamIndex],
-            outputPixelFormat: COLORSPACE_RGBA,
+            outputPixelFormat: outputPixelFormat === 'original' ? this.#demuxer.streams[this.#streamIndex].codecpar.format : 'rgba',
         });
     }
 
@@ -278,7 +278,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      * Get imageData for a given time in seconds
      * @param targetTime
      */
-    async getImageDataAtTime(targetTime: number, target?: Uint8ClampedArray): Promise<ImageData> {
+    async getImageDataAtTime(targetTime: number, rgbaBufferTarget?: Uint8ClampedArray): Promise<ImageData> {
         const targetPts = Math.round(this._timeToPTS(targetTime));
         VERBOSE && console.log('targetTime', targetTime, '-> targetPts', targetPts);
         const frame = await this._getFrameAtPts(targetPts);
@@ -287,18 +287,14 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             return null;
         }
 
-        let rawData = target;
-
-        if (!target) {
-            rawData = new Uint8ClampedArray(frame.width * frame.height * RGBA_PIXEL_SIZE);
+        if (rgbaBufferTarget) {
+            BeamcoderExtractor._setFrameDataToRGBABufferTarget(frame, rgbaBufferTarget);
         }
 
-        this._setFrameDataToImageData(frame, rawData);
-
         return {
-            data: rawData,
             width: frame.width,
             height: frame.height,
+            frame,
         };
     }
 
@@ -518,21 +514,23 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         return packet as Packet;
     }
 
-    _setFrameDataToImageData(frame: beamcoder.Frame, target: Uint8ClampedArray) {
+    static _setFrameDataToRGBABufferTarget(frame: beamcoder.Frame, rgbaBufferTarget: Uint8ClampedArray) {
         const sourceLineSize = frame.linesize as unknown as number;
         // frame.data can contain multiple "planes" in other colorspaces, but in rgba, there is just one "plane", so
         // our data is in frame.data[0]
         const pixels = frame.data[0] as Uint8Array;
+        const width = frame.width;
+        const height = frame.height;
 
         // libav creates larger buffers because it makes their internal code simpler.
         // we have to trim a part at the right of each pixel row.
 
-        for (let i = 0; i < frame.height; i++) {
+        for (let i = 0; i < height; i++) {
             const sourceStart = i * sourceLineSize;
-            const sourceEnd = sourceStart + frame.width * RGBA_PIXEL_SIZE;
+            const sourceEnd = sourceStart + width * RGBA_PIXEL_SIZE;
             const sourceData = pixels.subarray(sourceStart, sourceEnd);
-            const targetOffset = i * frame.width * RGBA_PIXEL_SIZE;
-            target.set(sourceData, targetOffset);
+            const targetOffset = i * width * RGBA_PIXEL_SIZE;
+            rgbaBufferTarget.set(sourceData, targetOffset);
         }
     }
 
