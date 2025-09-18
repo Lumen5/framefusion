@@ -278,7 +278,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      * Get imageData for a given time in seconds
      * @param targetTime
      */
-    async getImageDataAtTime(targetTime: number, target?: Uint8ClampedArray): Promise<ImageData> {
+    async getImageDataAtTime(targetTime: number, rgbaBufferTarget?: Uint8ClampedArray): Promise<ImageData> {
         const targetPts = Math.round(this._timeToPTS(targetTime));
         VERBOSE && console.log('targetTime', targetTime, '-> targetPts', targetPts);
         const frame = await this._getFrameAtPts(targetPts);
@@ -287,12 +287,11 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             return null;
         }
 
-        if (target) {
-            this._setFrameDataToImageData(frame, target);
+        if (rgbaBufferTarget) {
+            this._setFrameDataToRGBABufferTarget(frame, rgbaBufferTarget);
         }
 
         return {
-            data: target,
             width: frame.width,
             height: frame.height,
             frame,
@@ -515,7 +514,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         return packet as Packet;
     }
 
-    _setFrameDataToImageData(frame: beamcoder.Frame, target: Uint8ClampedArray) {
+    _setFrameDataToRGBABufferTarget(frame: beamcoder.Frame, rgbaBufferTarget: Uint8ClampedArray) {
         const sourceLineSize = frame.linesize as unknown as number;
         // frame.data can contain multiple "planes" in other colorspaces, but in rgba, there is just one "plane", so
         // our data is in frame.data[0]
@@ -529,7 +528,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             const sourceEnd = sourceStart + frame.width * RGBA_PIXEL_SIZE;
             const sourceData = pixels.subarray(sourceStart, sourceEnd);
             const targetOffset = i * frame.width * RGBA_PIXEL_SIZE;
-            target.set(sourceData, targetOffset);
+            rgbaBufferTarget.set(sourceData, targetOffset);
         }
     }
 
