@@ -115,7 +115,6 @@ const createFilter = async({
 };
 
 const STREAM_TYPE_VIDEO = 'video';
-// const COLORSPACE_RGBA = 'rgba';
 const MAX_RECURSION = 5;
 
 /**
