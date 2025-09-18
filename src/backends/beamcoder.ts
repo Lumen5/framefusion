@@ -16,7 +16,7 @@ const VERBOSE = false;
 /**
  * RGBA format need one byte for every components: r, g, b and a
  */
-const RGBA_PIXEL_SIZE = 4;
+export const RGBA_PIXEL_SIZE = 4;
 
 const createDecoder = ({
     demuxer,
@@ -288,7 +288,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         }
 
         if (rgbaBufferTarget) {
-            this._setFrameDataToRGBABufferTarget(frame, rgbaBufferTarget);
+            BeamcoderExtractor._setFrameDataToRGBABufferTarget(frame, rgbaBufferTarget);
         }
 
         return {
@@ -514,20 +514,22 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         return packet as Packet;
     }
 
-    _setFrameDataToRGBABufferTarget(frame: beamcoder.Frame, rgbaBufferTarget: Uint8ClampedArray) {
+    static _setFrameDataToRGBABufferTarget(frame: beamcoder.Frame, rgbaBufferTarget: Uint8ClampedArray) {
         const sourceLineSize = frame.linesize as unknown as number;
         // frame.data can contain multiple "planes" in other colorspaces, but in rgba, there is just one "plane", so
         // our data is in frame.data[0]
         const pixels = frame.data[0] as Uint8Array;
+        const width = frame.width;
+        const height = frame.height;
 
         // libav creates larger buffers because it makes their internal code simpler.
         // we have to trim a part at the right of each pixel row.
 
-        for (let i = 0; i < frame.height; i++) {
+        for (let i = 0; i < height; i++) {
             const sourceStart = i * sourceLineSize;
-            const sourceEnd = sourceStart + frame.width * RGBA_PIXEL_SIZE;
+            const sourceEnd = sourceStart + width * RGBA_PIXEL_SIZE;
             const sourceData = pixels.subarray(sourceStart, sourceEnd);
-            const targetOffset = i * frame.width * RGBA_PIXEL_SIZE;
+            const targetOffset = i * width * RGBA_PIXEL_SIZE;
             rgbaBufferTarget.set(sourceData, targetOffset);
         }
     }

@@ -10,6 +10,7 @@ export type Frame = {
 };
 
 export type InterpolateMode = 'fast' | 'high-quality';
+export type OutputPixelFormat = 'rgba' | 'original';
 
 export type ExtractorArgs = {
     inputFileOrUrl?: string;
@@ -18,7 +19,7 @@ export type ExtractorArgs = {
     endTime?: number;
     interpolateFps?: number;
     interpolateMode?: InterpolateMode;
-    outputPixelFormat?: 'rgba' | 'original';
+    outputPixelFormat?: OutputPixelFormat;
     // ffmpeg:    https://ffmpeg.org/doxygen/trunk/pixfmt_8h.html#a9a8e335cf3be472042bc9f0cf80cd4c5
     // gstreamer: https://gstreamer.freedesktop.org/documentation/video/video-format.html?gi-language=c#GstVideoFormat
 };
