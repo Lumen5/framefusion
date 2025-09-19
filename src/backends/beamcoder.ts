@@ -2,13 +2,12 @@ import type {
     Packet,
     Demuxer,
     Decoder,
-    Filterer,
     Frame
 } from '@lumen5/beamcoder';
 import beamcoder from '@lumen5/beamcoder';
 import type { ImageData } from '../types';
 import { BaseExtractor } from '../BaseExtractor';
-import type { Extractor, ExtractorArgs, InterpolateMode } from '../../framefusion';
+import type { Extractor, ExtractorArgs } from '../../framefusion';
 import { DownloadVideoURL } from '../DownloadVideoURL';
 
 const VERBOSE = false;
@@ -55,65 +54,6 @@ const createDecoder = ({
     });
 };
 
-/**
- * A filter to convert between color spaces.
- * An example would be YUV to RGB, for mp4 to png conversion.
- */
-const createFilter = async({
-    stream,
-    outputPixelFormat,
-    interpolateFps,
-    interpolateMode = 'fast',
-}: {
-    stream: beamcoder.Stream;
-    outputPixelFormat: string;
-    interpolateFps?: number;
-    interpolateMode?: InterpolateMode;
-}): Promise<beamcoder.Filterer> => {
-    if (!stream.codecpar.format) {
-        return null;
-    }
-
-    let filterSpec = [`[in0:v]format=${stream.codecpar.format}`];
-
-    if (interpolateFps) {
-        if (interpolateMode === 'high-quality') {
-            filterSpec = [...filterSpec, `minterpolate=fps=${interpolateFps}`];
-        }
-        else if (interpolateMode === 'fast') {
-            filterSpec = [...filterSpec, `fps=${interpolateFps}`];
-        }
-        else {
-            throw new Error(`Unexpected interpolation mode: ${interpolateMode}`);
-        }
-    }
-
-    const filterSpecStr = filterSpec.join(', ') + '[out0:v]';
-
-    VERBOSE && console.log(`filterSpec: ${filterSpecStr}`);
-
-    return beamcoder.filterer({
-        filterType: 'video',
-        inputParams: [
-            {
-                name: 'in0:v',
-                width: stream.codecpar.width,
-                height: stream.codecpar.height,
-                pixelFormat: stream.codecpar.format,
-                timeBase: stream.time_base,
-                pixelAspect: stream.sample_aspect_ratio,
-            },
-        ],
-        outputParams: [
-            {
-                name: 'out0:v',
-                pixelFormat: outputPixelFormat,
-            },
-        ],
-        filterSpec: filterSpecStr,
-    });
-};
-
 const STREAM_TYPE_VIDEO = 'video';
 const MAX_RECURSION = 5;
 
@@ -130,12 +70,6 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
      * The decoder reads packets and can output raw frame data
      */
     #decoder: Decoder = null;
-
-    /**
-     * Packets can be filtered to change colorspace, fps and add various effects. If there are no colorspace changes or
-     * filters, filter might not be necessary.
-     */
-    #filterer: Filterer = null;
 
     /**
      * This is where we store filtered frames from each previously processed packet.
@@ -199,7 +133,6 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     async init({
         inputFileOrUrl,
         threadCount = 8,
-        outputPixelFormat = 'rgba',
     }: ExtractorArgs): Promise<void> {
         this.#threadCount = threadCount;
         if (inputFileOrUrl.startsWith('http')) {
@@ -219,17 +152,6 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         if (this.#streamIndex === -1) {
             throw new Error(`File has no ${STREAM_TYPE_VIDEO} stream!`);
         }
-        let pixelFormat = 'rgba';
-        const origianlPixelFormat = this.#demuxer.streams[this.#streamIndex].codecpar.format;
-        const codecName = this.#demuxer.streams[this.#streamIndex].codecpar.name;
-        // vp8 and vp9 this.#demuxer.streams[this.#streamIndex].codecpar.format is 'yuv420p', but the decoder outputs yuva420p
-        if (outputPixelFormat === 'original' && codecName !== 'vp8' && codecName !== 'vp9') {
-            pixelFormat = origianlPixelFormat;
-        }
-        this.#filterer = await createFilter({
-            stream: this.#demuxer.streams[this.#streamIndex],
-            outputPixelFormat: pixelFormat,
-        });
     }
 
     async #createDecoder() {
@@ -403,8 +325,8 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             // packet contains frames
             if (this.#frames.length !== 0) {
                 // filter the frames
-                const filteredResult = await this.#filterer.filter([{ name: 'in0:v', frames: this.#frames }]);
-                filteredFrames = filteredResult.flatMap(r => r.frames);
+                // const filteredResult = await this.#filterer.filter([{ name: 'in0:v', frames: this.#frames }]);
+                filteredFrames = this.#frames; // filteredResult.flatMap(r => r.frames);
                 VERBOSE && console.log('filteredFrames', filteredFrames.length, 'filteredFrames.pts:', JSON.stringify(filteredFrames.map(f => f.pts)), '-> target.pts:', targetPTS);
 
                 // get the closest frame to our target presentation timestamp (PTS)
@@ -547,7 +469,6 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             this.#decoder = null;
         }
         this.#demuxer.forceClose();
-        this.#filterer = null;
         this.#filteredFramesPacket = undefined;
         this.#frames = [];
         this.#packet = null;
