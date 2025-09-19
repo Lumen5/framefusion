@@ -219,9 +219,16 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         if (this.#streamIndex === -1) {
             throw new Error(`File has no ${STREAM_TYPE_VIDEO} stream!`);
         }
+        let pixelFormat = 'rgba';
+        const origianlPixelFormat = this.#demuxer.streams[this.#streamIndex].codecpar.format;
+        const codecName = this.#demuxer.streams[this.#streamIndex].codecpar.name;
+        // vp8 and vp9 this.#demuxer.streams[this.#streamIndex].codecpar.format is 'yuv420p', but the decoder outputs yuva420p
+        if (outputPixelFormat === 'original' && codecName !== 'vp8' && codecName !== 'vp9') {
+            pixelFormat = origianlPixelFormat;
+        }
         this.#filterer = await createFilter({
             stream: this.#demuxer.streams[this.#streamIndex],
-            outputPixelFormat: outputPixelFormat === 'original' ? this.#demuxer.streams[this.#streamIndex].codecpar.format : 'rgba',
+            outputPixelFormat: pixelFormat,
         });
     }
 
