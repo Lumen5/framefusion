@@ -11,7 +11,7 @@ import { BaseExtractor } from '../BaseExtractor';
 import type { Extractor, ExtractorArgs, InterpolateMode } from '../../framefusion';
 import { DownloadVideoURL } from '../DownloadVideoURL';
 
-const VERBOSE = false;
+const VERBOSE = true;
 
 /**
  * RGBA format need one byte for every components: r, g, b and a
@@ -213,10 +213,10 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         if (!inputFileOrUrl.startsWith('file:')) {
             inputFileOrUrl = 'file:' + inputFileOrUrl;
         }
-        console.log('[FRAMEFUSION] +++++++++++++++++++++++++ inputFileOrUrl: ', inputFileOrUrl);
-        console.log('[FRAMEFUSION] +++++++++++++++++++++++++ beamcoder.protocols(): ', beamcoder.protocols());
+        VERBOSE && console.log('[FRAMEFUSION] +++++++++++++++++++++++++ inputFileOrUrl: ', inputFileOrUrl);
+        VERBOSE && console.log('[FRAMEFUSION] +++++++++++++++++++++++++ beamcoder.protocols(): ', beamcoder.protocols());
         this.#demuxer = await beamcoder.demuxer(inputFileOrUrl);
-        console.log('[FRAMEFUSION] +++++++++++++++++++++++++ demuxer creation succeeded ');
+        VERBOSE && console.log('[FRAMEFUSION] +++++++++++++++++++++++++ demuxer creation succeeded ');
         this.#streamIndex = this.#demuxer.streams.findIndex(stream => stream.codecpar.codec_type === STREAM_TYPE_VIDEO);
 
         if (this.#streamIndex === -1) {
