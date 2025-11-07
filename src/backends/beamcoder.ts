@@ -214,7 +214,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
             inputFileOrUrl = 'file:' + inputFileOrUrl;
         }
         VERBOSE && console.log('[FRAMEFUSION] +++++++++++++++++++++++++ inputFileOrUrl: ', inputFileOrUrl);
-        VERBOSE && console.log('[FRAMEFUSION] +++++++++++++++++++++++++ beamcoder.protocols(): ', beamcoder.protocols());
+        VERBOSE && console.log('[FRAMEFUSION] +++++++++++++++++++++++++ beamcoder.protocols(): ', JSON.stringify(beamcoder.protocols()));
         this.#demuxer = await beamcoder.demuxer(inputFileOrUrl);
         VERBOSE && console.log('[FRAMEFUSION] +++++++++++++++++++++++++ demuxer creation succeeded ');
         this.#streamIndex = this.#demuxer.streams.findIndex(stream => stream.codecpar.codec_type === STREAM_TYPE_VIDEO);
