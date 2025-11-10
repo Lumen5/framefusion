@@ -202,6 +202,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         outputPixelFormat = 'rgba',
     }: ExtractorArgs): Promise<void> {
         this.#threadCount = threadCount;
+        VERBOSE && console.log('[FRAMEFUSION] +++++++++++++++++++++++++ inputFileOrUrl BEFORE: ', inputFileOrUrl);
         if (inputFileOrUrl.startsWith('http')) {
             VERBOSE && console.log('downloading url', inputFileOrUrl);
             const downloadUrl = new DownloadVideoURL(inputFileOrUrl);
@@ -213,7 +214,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         if (!inputFileOrUrl.startsWith('file:')) {
             inputFileOrUrl = 'file:' + inputFileOrUrl;
         }
-        VERBOSE && console.log('[FRAMEFUSION] +++++++++++++++++++++++++ inputFileOrUrl: ', inputFileOrUrl);
+        VERBOSE && console.log('[FRAMEFUSION] +++++++++++++++++++++++++ inputFileOrUrl AFTER: ', inputFileOrUrl);
         VERBOSE && console.log('[FRAMEFUSION] +++++++++++++++++++++++++ beamcoder.protocols(): ', JSON.stringify(beamcoder.protocols()));
         this.#demuxer = await beamcoder.demuxer(inputFileOrUrl);
         VERBOSE && console.log('[FRAMEFUSION] +++++++++++++++++++++++++ demuxer creation succeeded ');
