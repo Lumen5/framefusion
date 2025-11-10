@@ -211,7 +211,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         }
         // Assume file url at this point
         if (!inputFileOrUrl.startsWith('file:')) {
-            inputFileOrUrl = 'file://' + inputFileOrUrl;
+            inputFileOrUrl = 'file:' + inputFileOrUrl;
         }
         VERBOSE && console.log('[FRAMEFUSION] +++++++++++++++++++++++++ inputFileOrUrl: ', inputFileOrUrl);
         VERBOSE && console.log('[FRAMEFUSION] +++++++++++++++++++++++++ beamcoder.protocols(): ', JSON.stringify(beamcoder.protocols()));
