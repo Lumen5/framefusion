@@ -11,7 +11,7 @@ import { BaseExtractor } from '../BaseExtractor';
 import type { Extractor, ExtractorArgs, InterpolateMode } from '../../framefusion';
 import { DownloadVideoURL } from '../DownloadVideoURL';
 
-const VERBOSE = true;
+const VERBOSE = false;
 
 /**
  * RGBA format need one byte for every components: r, g, b and a
@@ -202,7 +202,7 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         outputPixelFormat = 'rgba',
     }: ExtractorArgs): Promise<void> {
         this.#threadCount = threadCount;
-        VERBOSE && console.log('[FRAMEFUSION] +++++++++++++++++++++++++ inputFileOrUrl BEFORE: ', inputFileOrUrl);
+        VERBOSE && console.log('inputFileOrUrl before pre-processing: ', inputFileOrUrl);
         if (inputFileOrUrl.startsWith('http')) {
             VERBOSE && console.log('downloading url', inputFileOrUrl);
             const downloadUrl = new DownloadVideoURL(inputFileOrUrl);
@@ -214,10 +214,10 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
         if (!inputFileOrUrl.startsWith('file:')) {
             inputFileOrUrl = 'file:' + inputFileOrUrl;
         }
-        VERBOSE && console.log('[FRAMEFUSION] +++++++++++++++++++++++++ inputFileOrUrl AFTER: ', inputFileOrUrl);
-        VERBOSE && console.log('[FRAMEFUSION] +++++++++++++++++++++++++ beamcoder.protocols(): ', JSON.stringify(beamcoder.protocols()));
+        VERBOSE && console.log('inputFileOrUrl after pre-processing: ', inputFileOrUrl);
+        VERBOSE && console.log('beamcoder.protocols(): ', JSON.stringify(beamcoder.protocols()));
         this.#demuxer = await beamcoder.demuxer(inputFileOrUrl);
-        VERBOSE && console.log('[FRAMEFUSION] +++++++++++++++++++++++++ demuxer creation succeeded ');
+        VERBOSE && console.log('demuxer creation succeeded.');
         this.#streamIndex = this.#demuxer.streams.findIndex(stream => stream.codecpar.codec_type === STREAM_TYPE_VIDEO);
 
         if (this.#streamIndex === -1) {

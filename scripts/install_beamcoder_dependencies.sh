@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# NOTE: This should not be needed anymore. FFMPEG is now
+# statically linked to beamcoder.
+
 # ARCH=$(uname -m)
 
 # if [[ "$ARCH" == "x86_64" ]]; then
