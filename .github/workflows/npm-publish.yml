@@ -21,6 +21,7 @@ jobs:
           registry-url: https://registry.npmjs.org/
       - run: mkdir /tmp/framefusion
       - run: cp -r . /tmp/framefusion
+      - run: sudo apt-get update && sudo apt-get install -y libvpx-dev
       - run: sudo ./scripts/install_beamcoder_dependencies.sh
         working-directory: /tmp/framefusion
       - run: yarn install --frozen-lockfile
