@@ -163,12 +163,13 @@
   resolved "https://registry.yarnpkg.com/@humanwhocodes/object-schema/-/object-schema-1.2.1.tgz#b520529ec21d8e5945a1851dfd1c32e94e39ff45"
   integrity sha512-ZnQMnLV4e7hDlUvw8H+U8ASL02SS2Gn6+9Ac3wGGLIe7+je2AeAOxPY+izIPJDfFDb7eDjev0Us8MO1iFRN8hA==
 
-"@lumen5/beamcoder@^0.0.4":
-  version "0.0.4"
-  resolved "https://registry.yarnpkg.com/@lumen5/beamcoder/-/beamcoder-0.0.4.tgz#38f7cac4eb49ec0aecdb19cd47cbd47982af655a"
-  integrity sha512-jsE0pb69R6XHtTnYp8H8uxhAK7TEETbSwG4SkOOnyICIn7OBRmlx3hgXiqAarRPcIZpo3OfagcKrR9d74lj4hQ==
+"@lumen5/beamcoder@^0.0.12":
+  version "0.0.12"
+  resolved "https://registry.yarnpkg.com/@lumen5/beamcoder/-/beamcoder-0.0.12.tgz#ee3e50adb7d37ad4040d6b609b3532c31e7bedf1"
+  integrity sha512-7l43nzNhN3Um46yddU9L2nzNTk7sagTBhVycLl7kur+/umCitmR8MnFkAQirIVZg4bh+wHvMhb9hXiV67uAQGw==
   dependencies:
     bindings "^1.5.0"
+    prebuild-install "^7.1.0"
 
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
@@ -2479,7 +2480,7 @@ postcss@^8.4.21:
     picocolors "^1.0.0"
     source-map-js "^1.0.2"
 
-prebuild-install@^7.1.1:
+prebuild-install@^7.1.0, prebuild-install@^7.1.1:
   version "7.1.3"
   resolved "https://registry.yarnpkg.com/prebuild-install/-/prebuild-install-7.1.3.tgz#d630abad2b147443f20a212917beae68b8092eec"
   integrity sha512-8Mf2cbV7x1cXPUILADGI3wuhfqWvtiLA1iclTDbFRZkgRQS0NqsPZphna9V+HyTEadheuPmjaJMsbzKQFOzLug==
