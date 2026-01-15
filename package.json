@@ -19,7 +19,7 @@
     "test-in-docker": "docker build -t framefusion-test-image -f ./docker-images/ci.Dockerfile . && docker run -it framefusion-test-image"
   },
   "dependencies": {
-    "@lumen5/beamcoder": "^0.0.21",
+    "@lumen5/beamcoder": "^0.0.22",
     "fs-extra": "^11.1.1",
     "tmp": "^0.2.1"
   },

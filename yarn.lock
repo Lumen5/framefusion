@@ -163,10 +163,10 @@
   resolved "https://registry.yarnpkg.com/@humanwhocodes/object-schema/-/object-schema-1.2.1.tgz#b520529ec21d8e5945a1851dfd1c32e94e39ff45"
   integrity sha512-ZnQMnLV4e7hDlUvw8H+U8ASL02SS2Gn6+9Ac3wGGLIe7+je2AeAOxPY+izIPJDfFDb7eDjev0Us8MO1iFRN8hA==
 
-"@lumen5/beamcoder@^0.0.21":
-  version "0.0.21"
-  resolved "https://registry.yarnpkg.com/@lumen5/beamcoder/-/beamcoder-0.0.21.tgz#188e73d5d1c884f1e9ddd4ebb1599b4f06f97814"
-  integrity sha512-sH01MaXgOxhs8wBdg4BGpmzsISrj9yCpr7b5uo+BryrGi04/CDatjosLe+pvGc5fNdpjLnpQXRbskhIRAunE/A==
+"@lumen5/beamcoder@^0.0.22":
+  version "0.0.22"
+  resolved "https://registry.yarnpkg.com/@lumen5/beamcoder/-/beamcoder-0.0.22.tgz#85178a903eac618cccb717bb69cc46e78500b1d8"
+  integrity sha512-AUpOMswDM6YA8nb0amuKAGo9uks+LwJvAKk6kT+AZWIO+Hp22sCuYS7daeyfNfnGBZ6IEQPYmybYz9iRLyguDA==
   dependencies:
     bindings "^1.5.0"
     prebuild-install "^7.1.0"
