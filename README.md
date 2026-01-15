@@ -25,18 +25,6 @@ Then `yarn install` should install any required dependencies:
 yarn install
 ```
 
-## Linux
-
-You need to install ffmpeg libraries before installing. You can refer to [install_beamcoder_dependencies.sh](https://github.com/Lumen5/framefusion/blob/main/scripts/install_beamcoder_dependencies.sh).
-
-When installing, provide the path to ffmpeg (Unless it's already in system path).
-
-```
-export CPATH="/PATH_TO_FFMPEG/include/"
-export PKG_CONFIG_PATH="/PATH_TO_FFMPEG/lib/pkgconfig/"
-yarn install
-```
-
 # Installing in a project
 
 ```bash
