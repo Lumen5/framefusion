@@ -1,4 +1,4 @@
-FROM ubuntu:focal
+FROM ubuntu:22.04
 
 WORKDIR /ffmpeg-temp
 
@@ -18,8 +18,8 @@ WORKDIR /node-temp
 RUN wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
 
 RUN . "$HOME/.nvm/nvm.sh"\
-    && nvm install 20\
-    && nvm use 20\
+    && nvm install 22\
+    && nvm use 22\
     && npm install --global yarn
 
 ADD . /framefusion
