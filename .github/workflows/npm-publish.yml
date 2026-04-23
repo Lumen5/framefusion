@@ -14,10 +14,10 @@ jobs:
       CPATH: /tmp/framefusion/.framefusion-ffmpeg/ffmpeg/include/
       PKG_CONFIG_PATH: /tmp/framefusion/.framefusion-ffmpeg/ffmpeg/lib/pkgconfig/
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
           registry-url: https://registry.npmjs.org/
       - run: mkdir /tmp/framefusion
       - run: cp -r . /tmp/framefusion
