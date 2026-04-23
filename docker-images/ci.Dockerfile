@@ -18,8 +18,8 @@ WORKDIR /node-temp
 RUN wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
 
 RUN . "$HOME/.nvm/nvm.sh"\
-    && nvm install 22\
-    && nvm use 22\
+    && nvm install 24\
+    && nvm use 24\
     && npm install --global yarn
 
 ADD . /framefusion
