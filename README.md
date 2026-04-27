@@ -69,10 +69,10 @@ For a complete working project (with package.json, vite config, typescript confi
 
 # Running test
 
-Make sure you run node 18 or higher.
+Make sure you run node 24 or higher.
 
 ```bash
-nvm use 18
+nvm use 24
 yarn install && yarn run test-ui
 ```
 
