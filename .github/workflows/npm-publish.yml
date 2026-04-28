@@ -10,6 +10,9 @@ on:
 jobs:
   publish-npm:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     env:
       CPATH: /tmp/framefusion/.framefusion-ffmpeg/ffmpeg/include/
       PKG_CONFIG_PATH: /tmp/framefusion/.framefusion-ffmpeg/ffmpeg/lib/pkgconfig/
@@ -28,7 +31,5 @@ jobs:
         working-directory: /tmp/framefusion
       - run: yarn build
         working-directory: /tmp/framefusion
-      - run: yarn publish
+      - run: npm publish
         working-directory: /tmp/framefusion
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
