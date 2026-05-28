@@ -99,6 +99,24 @@ describe('FrameFusion', () => {
         await extractor.dispose();
     });
 
+    it('ignores non-AV streams when computing duration', async() => {
+        const FIXTURE_AV_DURATION_S = 2;
+
+        // Arrange
+        const extractor = await BeamcoderExtractor.create({
+            inputFileOrUrl: './test/samples/three-streams-with-long-subtitle.mp4',
+        });
+
+        // Act
+        const duration = extractor.duration;
+
+        // Assert
+        expect(duration).to.equal(FIXTURE_AV_DURATION_S);
+
+        // Cleanup
+        await extractor.dispose();
+    });
+
     it('only reads a few packets to get the next frame after a seek', async() => {
         const extractor = await BeamcoderExtractor.create({
             inputFileOrUrl: 'https://storage.googleapis.com/lumen5-prod-video/mvc-4k-new-orleans-a053c0340725rv-112014WA74Rf.mp4',

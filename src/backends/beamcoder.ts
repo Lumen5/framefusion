@@ -115,6 +115,7 @@ const createFilter = async({
 };
 
 const STREAM_TYPE_VIDEO = 'video';
+const STREAM_TYPE_AUDIO = 'audio';
 const MAX_RECURSION = 5;
 
 /**
@@ -251,12 +252,14 @@ export class BeamcoderExtractor extends BaseExtractor implements Extractor {
     }
 
     get duration(): number {
+        // Non-A/V streams (timed-text, data) can carry durations unrelated to playback;
+        // taking the max over them would inflate the reported duration.
         const maxStreamsDuration = Math.max(...this.#demuxer.streams
+            .filter(s => s.codecpar.codec_type === STREAM_TYPE_VIDEO || s.codecpar.codec_type === STREAM_TYPE_AUDIO)
             .map(s => {
                 const time_base = s.time_base;
                 return s.duration * time_base[0] / time_base[1];
             }));
-        // MP4 duration is defined as the longest stream duration
         // Webm stores it in Segment.Info.Duration
         return maxStreamsDuration || (this.ptsToTime(this.#demuxer.duration) / 1000);
     }
