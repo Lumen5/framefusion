@@ -1,7 +1,11 @@
 {
   "name": "@lumen5/framefusion",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Lumen5/framefusion"
+  },
   "scripts": {
     "docs": "typedoc framefusion.ts",
     "tsc": "tsc",
